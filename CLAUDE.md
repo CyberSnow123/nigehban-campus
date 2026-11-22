@@ -2,7 +2,8 @@
 
 Campus video-analytics FYP (FAST-NUCES). It watches recorded camera footage and alerts security operators to **abandoned bags** and **possible theft**, with snapshots, in a web dashboard. Classes: person, handbag, backpack only.
 
-## Read before working (in this order)
+## DOCS (in this order)
+
 1. [docs/Context.md](docs/Context.md): what, why, scope, definition of done
 2. [docs/Decisions.md](docs/Decisions.md): decisions D-01 onwards and why (scope cut, stack)
 3. [docs/master-roadMap-plan.md](docs/master-roadMap-plan.md): the 19 phases. Find the current phase and its `docs/phases/phase-XX.md`
@@ -12,9 +13,11 @@ Campus video-analytics FYP (FAST-NUCES). It watches recorded camera footage and 
 UI reference: `prototype/dashboard.html` (`dashboard.html` at the root until Phase 1). UML and DFD diagrams: `diagrams/uml/`.
 
 ## Stack
+
 FastAPI + SQLAlchemy 2 + Alembic (`apps/api`) · React + Vite + TS + Tailwind + TanStack Query (`apps/web`) · Python CV worker with Ultralytics YOLO26n + ByteTrack (`services/cv`) · shared Pydantic contracts (`packages/contracts`) · PostgreSQL 16 in Docker · `uv` for Python, `bun` for web · 3 s polling.
 
 ## Hard rules
+
 - **Contracts first:** change `docs/Data-Contracts.md`, then `packages/contracts`, then regenerate web types (`bun run gen:api`), then the code.
 - **Only the API writes to the DB.** The CV worker only POSTs to `/api/ingest/*` (D-11).
 - **Mock output is always labelled:** `source: mock`, which becomes `is_demo = true` and a "Demo data" badge. Never present mock output as real (D-06).
@@ -26,10 +29,30 @@ FastAPI + SQLAlchemy 2 + Alembic (`apps/api`) · React + Vite + TS + Tailwind + 
 - If a change alters a contract, structure or decision, update the matching doc in the same change.
 
 ## Workflow
+
 - Work one phase at a time on branch `feature/phase-XX-<slug>`. Write `docs/phases/phase-XX.md` from [the template](docs/phases/README.md) before coding.
 - Don't commit to or merge into `main` without the team's approval.
 
+## Modular and Maintainable Code
+
+Prefer small focused modules, clear interfaces, single-responsibility functions, explicit data contracts, and reusable services.
+Avoid god classes, large multi-purpose files, deep nesting, hidden side effects, and duplicated business logic.
+
+## Function Size
+
+Functions should be concise, but not artificially tiny.
+Avoid both giant functions and excessive micro-functions.
+If a function grows too large, delegate meaningful work to well-named sub-functions.
+Prefer an orchestration function that delegates validation, transformation, and persistence to focused helpers/services.
+
+## React Components
+
+Keep components focused and readable.
+If a component grows too large, extract reusable UI, hooks, services, or independent child components.
+Do not split components only to reduce line count.
+
 ## Commands (available from Phase 1)
+
 ```
 docker compose up -d                                   # PostgreSQL
 uv sync                                                # Python workspace
