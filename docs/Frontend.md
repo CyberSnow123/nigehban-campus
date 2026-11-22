@@ -1,9 +1,9 @@
 # Frontend (apps/web)
 
-> React port of the approved prototype `prototype/dashboard.html` (at the repo root until Phase 1 moves it). The prototype is the **visual reference**: match its layout, colours and wording. Data shapes come from [Data-Contracts.md](Data-Contracts.md) via generated types.
+> React port of the approved prototype `prototype/dashboard.html`. The prototype is the **visual reference**: match its layout, colours and wording. Data shapes come from [Data-Contracts.md](Data-Contracts.md) via generated types.
 
 ## 1. Stack
-React 18 · Vite · TypeScript (strict) · Tailwind CSS · React Router · TanStack Query · `openapi-typescript` (types in `src/lib/api/schema.d.ts`, never hand-edited) · Vitest + Testing Library. Packages via `bun`. Dev server: `bun dev` (port 5173, proxies `/api` to `:8000`).
+React 19 · Vite · TypeScript 6 (strict) · Tailwind CSS v4 (CSS-first `@theme`, no config file) · ESLint + Prettier · React Router · TanStack Query · `openapi-typescript` (types in `src/lib/api/schema.d.ts`, never hand-edited) · Vitest + Testing Library. Packages via `bun`. Dev server: `bun dev` (port 5173, proxies `/api` to `:8000`).
 
 ## 2. Layout
 ```

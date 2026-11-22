@@ -8,12 +8,14 @@ nigehban-campus/
 ├─ README.md                 human quick start
 ├─ docker-compose.yml        postgres:16 (volume pgdata)
 ├─ .env.example              API env template (never commit .env)
+├─ pyproject.toml            uv workspace root (+ uv.lock, .python-version)
+├─ .gitattributes            LF line endings
 ├─ .gitignore                data/, .env, node_modules, .venv, *.pt, dataset clips
 │
 ├─ apps/
 │  ├─ web/                   React app → docs/Frontend.md
-│  │  ├─ src/{app,components,layout,features,lib,styles}
-│  │  ├─ package.json  vite.config.ts  tailwind.config.ts  tsconfig.json
+│  │  ├─ src/{app,components,layout,features,lib,styles}   (tokens.css arrives in Phase 5)
+│  │  ├─ package.json  vite.config.ts  tsconfig.json  eslint.config.js
 │  └─ api/                   FastAPI → docs/Backend.md
 │     ├─ app/{core,db,models,schemas,routers,services}
 │     ├─ alembic/  scripts/seed.py  tests/

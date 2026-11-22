@@ -1,0 +1,21 @@
+services:
+  db:
+    image: postgres:16
+    container_name: nigehban-db
+    environment:
+      POSTGRES_USER: nigehban
+      POSTGRES_PASSWORD: nigehban
+      POSTGRES_DB: nigehban
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nigehban -d nigehban"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  pgdata:

@@ -46,7 +46,7 @@ The FYP-1 progress check expects about 40% of the work to be shown this week. Da
 - **Why:** It shares a language with the CV pipeline, so there is one toolchain and the Pydantic contracts are shared.
 
 ### D-08: Frontend is React + Vite + TypeScript + Tailwind
-- **Decision:** `apps/web` is a componentised port of the approved prototype (`dashboard.html`). It uses TanStack Query for server data, `bun` for packages, and TS types generated from the API's OpenAPI schema.
+- **Decision:** `apps/web` is a componentised port of the approved prototype (`prototype/dashboard.html`). It uses TanStack Query for server data, `bun` for packages, and TS types generated from the API's OpenAPI schema.
 - **Why:** The prototype is the visual reference. React keeps it maintainable as FYP-2 adds features.
 
 ### D-09: Dashboard updates by polling every 3 s
@@ -60,6 +60,14 @@ The FYP-1 progress check expects about 40% of the work to be shown this week. Da
 ### D-11: CV worker posts events to the API; it never touches the DB
 - **Decision:** `services/cv` sends each event plus its snapshot to `POST /api/ingest/events`, authenticated with a worker API key. Only the API writes to PostgreSQL.
 - **Why:** This gives one write path, one validation point, and mock and real sources that are interchangeable (D-05).
+
+### D-12: Latest React and Tailwind v4; TypeScript pinned to 6.x
+- **Decision:** `apps/web` uses the latest stable React (19) and Tailwind CSS v4 (CSS-first config via `@theme`, `@tailwindcss/vite`, no `tailwind.config.ts`). TypeScript is pinned to `~6.0`.
+- **Why:** Team preference for current versions. `typescript-eslint` does not yet support TypeScript 7, so TS stays on 6.x until it does.
+
+### D-13: Heavy CV dependencies are added in Phase 10
+- **Decision:** `services/cv` declares only light dependencies in Phase 1 (contracts, httpx, numpy, opencv-python-headless). `ultralytics` and torch arrive with the real baseline in Phase 10.
+- **Why:** Keeps `uv sync` fast and the lockfile stable until the code that needs them exists.
 
 ---
 
