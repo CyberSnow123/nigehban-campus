@@ -18,6 +18,17 @@ cd apps/web && bun install      # web dependencies
 bun dev                         # http://localhost:5173 (placeholder page in Phase 1)
 ```
 
+Database and API (from `apps/api`):
+
+```bash
+uv run alembic upgrade head                      # create the tables
+uv run python scripts/seed.py                    # dev users, CAM 01-04, demo alerts (safe to rerun)
+uv run uvicorn app.main:app --reload --port 8000 # then: curl localhost:8000/api/health
+```
+
+Dev logins `operator/operator123` and `admin/admin123` are for local use only. Seeded alerts are demo data.
+Python tests use a separate `nigehban_test` database, created automatically on the same server.
+
 Checks:
 
 ```bash
@@ -27,7 +38,7 @@ uv run nigehban-cv --version    # CV worker stub
 cd apps/web && bun run lint && bun run typecheck && bun run test && bun run build
 ```
 
-Available in later phases: `alembic upgrade head` and the seed script (Phase 3), the API server (Phase 3+), `nigehban-cv run` (Phase 9+), `bun run gen:api` (Phase 4).
+Available in later phases: `nigehban-cv run` (Phase 9+), `bun run gen:api` (Phase 4).
 
 **Port 5432 already in use?** Set `DB_PORT=5433` in `.env` (and in `DATABASE_URL`), then `docker compose up -d`.
 

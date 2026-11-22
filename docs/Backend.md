@@ -47,7 +47,7 @@ Rule: routers stay thin, and the business rules (transitions, idempotency) live 
 | POST | `/api/ingest/runs/{id}/status` | worker | status and FPS heartbeat |
 | POST | `/api/ingest/runs/{id}/frame` | worker | latest frame |
 | POST | `/api/ingest/events` | worker | event + snapshot → alert (idempotent) |
-| GET | `/api/health` | none | `{status, database}` |
+| GET | `/api/health` | none | `200 {"status":"ok","database":"connected"}`, or `503 {"status":"degraded","database":"disconnected"}` when `SELECT 1` fails. No error details. API-only shape (`app/schemas/health.py`) |
 
 Auth: `Authorization: Bearer <jwt>` (12 h expiry) for users, and `X-Worker-Key` for the `ingest` routes. Logout happens on the client (token dropped).
 
@@ -60,9 +60,21 @@ Auth: `Authorization: Bearer <jwt>` (12 h expiry) for users, and `X-Worker-Key` 
 | `alerts` | `id`, `ref_code` unique, `event_id` **unique**, `type`, `status`, `is_demo`, `camera_id` fk, `run_id` fk, `occurred_at`, `video_ts_s`, `bag_track_id`, `bag_class`, `bag_bbox` jsonb, `owner_track_id`, `carrier_track_id`, `separation_s`, `owner_distance_m`, `owner_away_s`, `confidence`, `owner_match`, `snapshot_path`, `acknowledged_by` fk, `acknowledged_at`, `closed_at`, `created_at` |
 | `alert_actions` | `id`, `alert_id` fk, `action`, `from_status`, `to_status`, `user_id` fk, `note`, `at` |
 
-Indexes: `alerts(status, occurred_at desc)`, `alerts(run_id)`, `alerts(owner_track_id)`, `alerts(carrier_track_id)`.
-Enums are stored as `varchar` with check constraints (simpler migrations).
-`ref_code` sequence: per year, counting both types (`SEC-2026-001-A`, `SEC-2026-002-T`, …).
+Indexes: `alerts(status, occurred_at desc)`, `alerts(run_id)`, `alerts(owner_track_id)`, `alerts(carrier_track_id)`, plus foreign-key lookups `alerts(camera_id)`, `runs(camera_id)`, `alert_actions(alert_id, at)`.
+Unique: `users.username`, `cameras.name`, `alerts.ref_code`, `alerts.event_id`.
+Enums are stored as `varchar` with check constraints (simpler migrations). The value lists come from the contracts enums.
+
+Column rules (Phase 3, enforced by named check constraints `ck_<table>_<rule>`):
+- **Keys** are the contract IDs (`varchar(30)`, `usr_`/`cam_`/`run_`/`alt_`/`act_` + ULID), made in Python with `new_id`. Each table checks its own prefix; `alerts.event_id` checks `evt_`.
+- **Not null:** `alerts.run_id` (every alert comes from a run), `alert_actions.user_id`. Nullable: `runs.pid`, `runs.message`, `runs.started_at/ended_at`, the type-conditional alert fields, `owner_track_id`, `owner_distance_m`, `acknowledged_*`, `closed_at`, `alert_actions.note` (max 500).
+- **alerts:** the type-conditional fields of Data-Contracts §3; `authorised_pickup`/`confirmed_theft` only on `possible_theft`; `ref_code` format and its `A`/`T` suffix matching `type`; `confidence`, `owner_match` in 0-1; `video_ts_s`, distances and durations `>= 0`; `bag_bbox` a 4-item JSON array; `closed_at` set exactly when the status is closed; status `acknowledged` needs `acknowledged_at` and `acknowledged_by`.
+- **runs:** `is_demo = (source = 'mock')` (D-06); `frames_processed`, `fps >= 0`; `ended_at >= started_at`. `alerts.is_demo` is copied from the run by the service.
+- **alert_actions:** `from_status <> to_status`; `acknowledge` always goes to `acknowledged`. Whether a move is allowed at all is checked by `alert_service` with `can_transition`.
+- **Foreign keys** are `ON DELETE RESTRICT`: alerts and their audit trail are never deleted.
+- **Paths:** `alerts.snapshot_path` is relative to `DATA_DIR` (`snapshots/{run_id}/{event_id}.jpg`); `runs.video_path` is relative to `DATA_DIR/videos`.
+- **Timestamps** are `timestamptz`; `created_at` and `alert_actions.at` default to `now()`.
+
+`ref_code` sequence: per year, counting both types (`SEC-2026-001-A`, `SEC-2026-002-T`, …). `app/services/ref_codes.py` takes the highest number used that year + 1; the unique key is the safety net (locking for concurrent ingest arrives with Phase 6).
 
 ## 5. Behaviour rules
 - **Transitions** are enforced in `alert_service` only, following the table in Data-Contracts §2. Every change writes an `alert_actions` row in the same transaction.
@@ -74,5 +86,6 @@ Enums are stored as `varchar` with check constraints (simpler migrations).
 
 ## 6. Setup and tests
 - `.env.example`: `DATABASE_URL=postgresql+psycopg://nigehban:nigehban@localhost:5432/nigehban`, `JWT_SECRET`, `WORKER_KEY`, `DATA_DIR=../../data`, `CV_CONFIG=../../services/cv/config.json`.
-- `uv run alembic upgrade head` then `uv run python scripts/seed.py` (users `operator/operator123` and `admin/admin123` are for **dev only**).
-- Tests use a separate `nigehban_test` DB. They cover transitions, ingest idempotency, auth guards and path checks.
+- Settings (`app/core/settings.py`) read the repo-root `.env`; real environment variables win. Relative `DATA_DIR`/`CV_CONFIG` resolve against `apps/api`, whatever the working directory.
+- `uv run alembic upgrade head` then `uv run python scripts/seed.py` (users `operator/operator123` and `admin/admin123` are for **dev only**). The seed is idempotent: it finds users by username, cameras by name, and demo runs/alerts by stable IDs, and never overwrites a row. It adds CAM 01-04 (prototype names), one completed `mock` run per camera, 8 demo alerts (`is_demo=true`) in several statuses with matching `alert_actions`, and copies a "DEMO DATA" placeholder JPEG to each snapshot path.
+- Tests use a separate `nigehban_test` DB (`TEST_DATABASE_URL`, or `DATABASE_URL` with the name swapped; created if missing). The schema comes from the real migration; tables are emptied after each test; DB tests skip if Postgres is down. They cover the schema, constraints, migration round trip, seed and health, and later transitions, ingest idempotency, auth guards and path checks.
