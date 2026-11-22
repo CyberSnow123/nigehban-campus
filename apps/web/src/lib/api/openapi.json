@@ -85,6 +85,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too many attempts from this address",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
           "422": {
             "description": "Request is not valid",
             "content": {
@@ -128,6 +138,16 @@
           },
           "403": {
             "description": "Not allowed for this role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many attempts from this address",
             "content": {
               "application/json": {
                 "schema": {
@@ -203,6 +223,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too many attempts from this address",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
           "422": {
             "description": "Request is not valid",
             "content": {
@@ -264,6 +294,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too many attempts from this address",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
           "422": {
             "description": "Request is not valid",
             "content": {
@@ -303,6 +343,7 @@
           "INVALID_TRANSITION",
           "DUPLICATE_EVENT",
           "RUN_NOT_RUNNING",
+          "RATE_LIMITED",
           "INTERNAL_ERROR"
         ],
         "title": "ErrorCode"

@@ -1,9 +1,10 @@
 from typing import Annotated
 
-from fastapi import APIRouter, BackgroundTasks, Depends, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Request, status
 from nigehban_contracts import UserMe
 
 from app.core.errors import ERROR_RESPONSES
+from app.core.rate_limit import limiter, login_limit
 from app.core.security import create_access_token
 from app.core.settings import Settings, get_settings
 from app.routers.deps import CurrentUser, DbSession
@@ -23,7 +24,8 @@ FORGOT_MESSAGE = "If that email is registered, a reset link has been sent."
 
 
 @router.post("/login", response_model=LoginResponse)
-def login(body: LoginRequest, db: DbSession) -> LoginResponse:
+@limiter.limit(login_limit)  # every attempt counts, right or wrong; needs `request` below
+def login(request: Request, body: LoginRequest, db: DbSession) -> LoginResponse:
     user = auth_service.authenticate(db, body.username, body.password)
     token, expires_at = create_access_token(user.id)
     return LoginResponse(

@@ -9,6 +9,7 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from nigehban_contracts import ErrorBody, ErrorCode, ErrorDetail
+from slowapi.errors import RateLimitExceeded
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 logger = logging.getLogger("nigehban.api")
@@ -19,12 +20,14 @@ _STATUS_TO_CODE = {
     404: ErrorCode.NOT_FOUND,
     405: ErrorCode.NOT_FOUND,
     422: ErrorCode.VALIDATION_ERROR,
+    429: ErrorCode.RATE_LIMITED,
 }
 _CODE_MESSAGES = {
     ErrorCode.UNAUTHORIZED: "Authentication required.",
     ErrorCode.FORBIDDEN: "You do not have permission to do that.",
     ErrorCode.NOT_FOUND: "Not found.",
     ErrorCode.VALIDATION_ERROR: "The request is not valid.",
+    ErrorCode.RATE_LIMITED: "Too many requests. Please wait and try again.",
     ErrorCode.INTERNAL_ERROR: "Something went wrong on the server.",
 }
 
@@ -33,6 +36,7 @@ _CODE_MESSAGES = {
 ERROR_RESPONSES: dict[int | str, dict] = {
     401: {"model": ErrorBody, "description": "Missing, invalid or expired token"},
     403: {"model": ErrorBody, "description": "Not allowed for this role"},
+    429: {"model": ErrorBody, "description": "Too many attempts from this address"},
     422: {"model": ErrorBody, "description": "Request is not valid"},
 }
 
@@ -59,10 +63,21 @@ def validation_error(message: str) -> ApiError:
     return ApiError(422, ErrorCode.VALIDATION_ERROR, message)
 
 
-def error_response(status_code: int, code: ErrorCode, message: str) -> JSONResponse:
+def error_response(
+    status_code: int, code: ErrorCode, message: str, headers: dict[str, str] | None = None
+) -> JSONResponse:
     body = ErrorBody(error=ErrorDetail(code=code, message=message))
-    headers = {"WWW-Authenticate": "Bearer"} if status_code == 401 else None
+    headers = dict(headers or {})
+    if status_code == 401:
+        headers["WWW-Authenticate"] = "Bearer"
     return JSONResponse(body.model_dump(mode="json"), status_code=status_code, headers=headers)
+
+
+def _wait_text(seconds: int) -> str:
+    if seconds < 90:
+        return f"{seconds} seconds"
+    minutes = -(-seconds // 60)  # round up
+    return f"{minutes} minutes"
 
 
 def _field_messages(exc: RequestValidationError) -> str:
@@ -83,6 +98,15 @@ def register_error_handlers(app: FastAPI) -> None:
     async def _http_error(_: Request, exc: StarletteHTTPException) -> JSONResponse:
         code = _STATUS_TO_CODE.get(exc.status_code, ErrorCode.INTERNAL_ERROR)
         return error_response(exc.status_code, code, _CODE_MESSAGES[code])
+
+    @app.exception_handler(RateLimitExceeded)
+    async def _rate_limited(_: Request, exc: RateLimitExceeded) -> JSONResponse:
+        # The whole window length is an upper bound for how long the client must wait.
+        wait = int(exc.limit.limit.get_expiry())
+        message = f"Too many attempts. Please wait up to {_wait_text(wait)} and try again."
+        return error_response(
+            429, ErrorCode.RATE_LIMITED, message, headers={"Retry-After": str(wait)}
+        )
 
     @app.exception_handler(RequestValidationError)
     async def _validation_error(_: Request, exc: RequestValidationError) -> JSONResponse:

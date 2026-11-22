@@ -108,7 +108,7 @@ export interface components {
          * ErrorCode
          * @enum {string}
          */
-        ErrorCode: "UNAUTHORIZED" | "FORBIDDEN" | "NOT_FOUND" | "VALIDATION_ERROR" | "INVALID_TRANSITION" | "DUPLICATE_EVENT" | "RUN_NOT_RUNNING" | "INTERNAL_ERROR";
+        ErrorCode: "UNAUTHORIZED" | "FORBIDDEN" | "NOT_FOUND" | "VALIDATION_ERROR" | "INVALID_TRANSITION" | "DUPLICATE_EVENT" | "RUN_NOT_RUNNING" | "RATE_LIMITED" | "INTERNAL_ERROR";
         /** ErrorDetail */
         ErrorDetail: {
             code: components["schemas"]["ErrorCode"];
@@ -271,6 +271,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
+            /** @description Too many attempts from this address */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
         };
     };
     me_api_auth_me_get: {
@@ -311,6 +320,15 @@ export interface operations {
             };
             /** @description Request is not valid */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Too many attempts from this address */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -369,6 +387,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
+            /** @description Too many attempts from this address */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
         };
     };
     reset_password_api_auth_reset_password_post: {
@@ -413,6 +440,15 @@ export interface operations {
             };
             /** @description Request is not valid */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Too many attempts from this address */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };

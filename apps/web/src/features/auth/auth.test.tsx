@@ -106,6 +106,31 @@ describe('login', () => {
     expect(screen.getByRole('heading', { name: 'Operator sign in' })).toBeTruthy()
   })
 
+  it('shows the wait message on 429 and lets the user try again afterwards', async () => {
+    let blocked = true
+    mockApi(() =>
+      blocked
+        ? apiError(
+            429,
+            'RATE_LIMITED',
+            'Too many attempts. Please wait up to 60 seconds and try again.',
+          )
+        : loginOk(),
+    )
+    renderApp('/login')
+    const user = await logIn()
+    const submit = screen.getByRole('button', { name: 'Log in to monitoring' })
+    await user.click(submit)
+
+    expect((await screen.findByRole('alert')).textContent).toMatch(/too many attempts.*60 seconds/i)
+    expect(getToken()).toBeNull()
+    expect((submit as HTMLButtonElement).disabled).toBe(false) // not stuck on "Logging in…"
+
+    blocked = false
+    await user.click(submit)
+    expect(await screen.findByText('Duty Operator')).toBeTruthy()
+  })
+
   it('says so when the server cannot be reached', async () => {
     mockApi(() => {
       throw new TypeError('network down')

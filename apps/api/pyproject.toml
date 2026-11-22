@@ -14,6 +14,7 @@ dependencies = [
   "pyjwt",
   "argon2-cffi",
   "python-multipart",
+  "slowapi>=0.1.10",
 ]
 
 [tool.uv.sources]

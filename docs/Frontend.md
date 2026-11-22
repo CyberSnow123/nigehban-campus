@@ -38,7 +38,7 @@ apps/web/src/
 | `/runs/:runId/person/:trackId` | `v-person` | track IDs are per run |
 | `/settings` | `v-app-settings` | editing is admin only, others read-only |
 
-All routes except login and logged-out sit inside `RequireAuth` and `AppShell`. On a 401 to a request that carried a token, the app clears the token and redirects to `/login?next=<path>`; after login it returns to `next` (internal paths only). The login, forgot and reset calls never send a token, and their 401/422 are shown on the form.
+All routes except login and logged-out sit inside `RequireAuth` and `AppShell`. On a 401 to a request that carried a token, the app clears the token and redirects to `/login?next=<path>`; after login it returns to `next` (internal paths only). The login, forgot and reset calls never send a token, and their 401/422/429 are shown on the form (the server's own message, e.g. "Too many attempts. Please wait up to 60 seconds and try again.").
 
 ## 4. Data and polling
 - **Token storage:** always in memory; the login checkbox "Remember this terminal session" also keeps it in `localStorage` (checked) or `sessionStorage` (unchecked). A stored token is verified with `GET /api/auth/me` before the app trusts it. Types come from `bun run gen:api` (`schema.d.ts` and `openapi.json` are committed, never hand-edited).

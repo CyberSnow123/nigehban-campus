@@ -20,6 +20,8 @@ from sqlalchemy.orm import Session, sessionmaker
 # Tests never send real email and never depend on a developer's secrets. Environment variables
 # win over .env, and this runs before the first get_settings() call.
 os.environ["MAIL_BACKEND"] = "console"
+# Many tests log in; the limiter is off by default and switched on by the `limited` fixture.
+os.environ["RATE_LIMIT_ENABLED"] = "false"
 # DATABASE_URL is deliberately NOT set here: it must come from .env, so the tests can never fall
 # back to another project's database on the default port.
 os.environ.setdefault("JWT_SECRET", "test-jwt-secret-" + "x" * 32)

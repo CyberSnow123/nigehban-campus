@@ -4,6 +4,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
+import limits
 from pydantic import SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -37,11 +38,26 @@ class Settings(BaseSettings):
     smtp_starttls: bool = True  # leave on for Gmail; off only for a local test server
     web_base_url: str = "http://localhost:5173"
 
+    # Login rate limit, counted per client IP address (in memory, so per server process).
+    rate_limit_enabled: bool = True
+    login_rate_limit: str = "10/minute"  # "<count>/<second|minute|hour>"
+
     @field_validator("jwt_secret", "worker_key")
     @classmethod
     def _secret_long_enough(cls, value: SecretStr) -> SecretStr:
         if len(value.get_secret_value()) < MIN_SECRET_LENGTH:
             raise ValueError(f"must be at least {MIN_SECRET_LENGTH} characters")
+        return value
+
+    @field_validator("login_rate_limit")
+    @classmethod
+    def _valid_rate_limit(cls, value: str) -> str:
+        try:
+            parsed = limits.parse_many(value)  # "10/minute" or "10/minute;50/hour"
+        except ValueError as exc:
+            raise ValueError('use the form "10/minute"') from exc
+        if any(item.amount < 1 for item in parsed):
+            raise ValueError('the count must be at least 1, for example "10/minute"')
         return value
 
     @field_validator("data_dir", "cv_config")
