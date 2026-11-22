@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nigehban Campus</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* VOICE: calm, clinical campus security console, matching the approved Stitch screens.
+   IDEA: an operator's control-room app: sidebar, white cards, CCTV frames with tracking boxes.
+   PICTURE: drawn CCTV scenes (SVG) with person/bag boxes, owner lines and alert tags.
+   COLOUR and TYPE: slate page, white cards, navy actions; red = abandoned, purple = theft, amber = acknowledged, green = resolved; Inter + JetBrains Mono.
+   LAYOUT: 270px sidebar + main column; cards in grids; under 760px a bottom tab bar and single column. */
+:root{color-scheme:light;--bg:#f6f8fb;--card:#fff;--line:#e5e9f0;--ink:#0f172a;--mute:#64748b;--navy:#0f172a;--red:#e11d48;--redBg:#fff1f3;--pur:#9333ea;--purBg:#f6efff;--amb:#d97706;--ambBg:#fff7e6;--grn:#059669;--grnBg:#ecfdf5;--blu:#2563eb;--bluBg:#eff4ff;--org:#f59e0b}
+:root[data-theme=dark],:root[data-theme=light]{color-scheme:light}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 Inter,system-ui,sans-serif;overflow-x:clip}
+button,input,select{font:inherit;color:inherit}
+.mono{font-family:'JetBrains Mono',ui-monospace,monospace}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--blu);outline-offset:2px}
+[hidden]{display:none!important}
+/* shell */
+.shell{display:grid;grid-template-columns:270px minmax(0,1fr);min-height:100vh}
+.side{background:#fff;border-right:1px solid var(--line);display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
+.brand{display:flex;gap:12px;align-items:center;padding:22px 22px 20px;border-bottom:1px solid var(--line)}
+.logo{width:44px;height:44px;border-radius:12px;background:var(--navy);display:grid;place-items:center;flex:none}
+.logo svg{width:22px;height:22px}
+.brand b{display:block;font-size:17px}.brand small{color:var(--mute);font-size:11px;letter-spacing:.06em;font-weight:600}
+.navlist{padding:16px 14px;display:flex;flex-direction:column;gap:4px}
+.nav{display:flex;align-items:center;gap:12px;min-height:46px;padding:0 14px;border-radius:12px;border:0;background:none;text-align:left;color:#334155;font-weight:500}
+.nav:hover{background:#f1f5f9}
+.nav.on{background:var(--navy);color:#fff}
+.nav svg{width:18px;height:18px;flex:none}
+.nav .badge{margin-left:auto;background:var(--red);color:#fff;font-size:12px;font-weight:700;border-radius:99px;min-width:22px;height:22px;display:grid;place-items:center;padding:0 6px}
+.nav .dot{margin-left:auto;width:8px;height:8px;border-radius:50%;background:#10b981}
+.me{margin-top:auto;border-top:1px solid var(--line);padding:16px;display:flex;align-items:center;gap:12px}
+.av{width:40px;height:40px;border-radius:50%;background:var(--navy);color:#fff;display:grid;place-items:center;font-weight:700;font-size:14px;flex:none;border:0}
+.me b{display:block;font-size:14px}.me small{color:var(--mute);font-size:12px}
+.iconbtn{margin-left:auto;width:40px;height:40px;border-radius:10px;border:1px solid transparent;background:none;display:grid;place-items:center;color:var(--mute)}
+.iconbtn:hover{background:#f1f5f9;color:var(--ink)}
+.iconbtn svg{width:20px;height:20px}
+.topbar{display:flex;align-items:center;gap:14px;padding:14px clamp(16px,3vw,40px);border-bottom:1px solid var(--line);background:#fff;position:sticky;top:0;z-index:4}
+.search{flex:1;max-width:480px;position:relative}
+.search input{width:100%;min-height:44px;border:1px solid var(--line);border-radius:12px;background:#f8fafc;padding:0 14px 0 40px;font-size:15px}
+.search svg{position:absolute;left:13px;top:13px;width:18px;height:18px;color:var(--mute)}
+.bell{position:relative;margin-left:auto}
+.bell i{position:absolute;top:8px;right:9px;width:8px;height:8px;border-radius:50%;background:var(--red)}
+.who{display:flex;align-items:center;gap:10px;border-left:1px solid var(--line);padding-left:14px}
+.who b{display:block;font-size:14px}.who small{color:var(--mute);font-size:12px}
+main.page{padding:28px clamp(16px,3vw,40px) 60px}
+h1{font-size:clamp(26px,3vw,32px);line-height:1.15;margin:0;letter-spacing:-.01em}
+.sub{color:var(--mute);margin:6px 0 0}
+.head{display:flex;flex-wrap:wrap;align-items:center;gap:12px 16px;margin-bottom:22px}
+.head .right{margin-left:auto;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:0 1px 3px #0f172a0a}
+.pad{padding:20px}
+.grid4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-bottom:20px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-bottom:20px}
+.stat{padding:18px 20px;display:flex;justify-content:space-between;gap:10px}
+.stat span{color:var(--mute);font-size:14px}.stat b{display:block;font-size:30px;line-height:1.2;margin-top:4px}
+.stat .ic{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;flex:none}
+.stat .ic svg{width:20px;height:20px}
+.two{display:grid;grid-template-columns:minmax(0,1.9fr) minmax(0,1fr);gap:20px;align-items:start}
+.col{display:flex;flex-direction:column;gap:16px}
+.btn{min-height:44px;border-radius:12px;border:1px solid var(--line);background:#fff;padding:0 16px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.btn:hover{border-color:#cbd5e1}
+.btn.dark{background:var(--navy);color:#fff;border-color:var(--navy)}
+.btn.red{background:var(--red);color:#fff;border-color:var(--red)}
+.btn.pur{background:var(--pur);color:#fff;border-color:var(--pur)}
+.btn.soft{background:#f1f5f9;border-color:#f1f5f9}
+.btn.wide{width:100%}
+.btn svg{width:16px;height:16px}
+.link{border:0;background:none;color:var(--mute);text-decoration:underline;padding:8px;min-height:44px}
+.pill{display:inline-flex;align-items:center;gap:6px;border-radius:99px;padding:3px 10px;font-size:13px;font-weight:600;white-space:nowrap}
+.pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.p-red{background:var(--redBg);color:var(--red)}.p-pur{background:var(--purBg);color:var(--pur)}.p-amb{background:var(--ambBg);color:var(--amb)}.p-grn{background:var(--grnBg);color:var(--grn)}.p-gry{background:#f1f5f9;color:#475569}.p-blu{background:var(--bluBg);color:var(--blu)}
+.seg{display:inline-flex;background:#fff;border:1px solid var(--line);border-radius:12px;padding:4px;gap:2px}
+.seg button{border:0;background:none;border-radius:9px;padding:0 14px;min-height:36px;font-weight:500;color:#334155}
+.seg button.on{background:var(--navy);color:#fff}
+select.sel{min-height:44px;border:1px solid var(--line);border-radius:12px;background:#fff;padding:0 12px;font-weight:500}
+/* camera */
+.cam-h{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;padding:14px 18px;border-bottom:1px solid var(--line)}
+.cam-h b{font-size:15px}.cam-h .tag{background:#f1f5f9;border-radius:8px;padding:2px 8px;font-size:12px}
+.rec{width:9px;height:9px;border-radius:50%;background:var(--red);animation:blink 1.4s infinite}
+@keyframes blink{50%{opacity:.25}}
+.feed{background:#0b1220;aspect-ratio:16/9;position:relative;overflow:hidden}
+.feed svg{position:absolute;inset:0;width:100%;height:100%}
+.feed.sm{border-radius:12px}
+.cam-f{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;padding:12px 18px;font-size:13px;color:var(--mute)}
+.cam-f .k{display:inline-flex;align-items:center;gap:6px}.cam-f .k::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--c,#94a3b8)}
+.grid2x2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:10px;background:#0b1220}
+.grid2x2 .feed{border-radius:10px}
+.grid2x2 .lbl{color:#cbd5e1;font-size:12px;padding:6px 2px 0}
+@media(prefers-reduced-motion:reduce){.rec,.flow{animation:none!important}}
+.flow{stroke-dasharray:8 8;animation:flow 1s linear infinite}
+@keyframes flow{to{stroke-dashoffset:-16}}
+/* key-value rows */
+.kv{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);font-size:14px}
+.kv:last-child{border:0}
+.kv span{color:var(--mute)}.kv b{font-weight:600;text-align:right}
+.kv.hot{background:var(--redBg);margin:0 -12px;padding:12px;border-radius:12px;border:0}
+.card h2{font-size:16px;margin:0;display:flex;align-items:center;gap:10px}
+.card h2 small{margin-left:auto;color:var(--mute);font-weight:500;font-size:13px}
+.bar{height:8px;background:#eef2f7;border-radius:99px;overflow:hidden}.bar i{display:block;height:100%;border-radius:99px}
+.alertcard{padding:18px;border-radius:18px;border:1px solid}
+.alertcard.ab{background:var(--redBg);border-color:#fecdd3}.alertcard.th{background:var(--purBg);border-color:#e9d5ff}
+.alertcard p{margin:6px 0 14px;font-size:14px}
+/* table */
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{text-align:left;color:var(--mute);font-size:12px;font-weight:600;letter-spacing:.04em;padding:14px 16px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:14px 16px;border-bottom:1px solid var(--line);vertical-align:middle}
+tr:last-child td{border-bottom:0}
+td.r,th.r{text-align:right}
+.tblbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--line)}
+.empty{padding:28px;color:var(--mute);text-align:center}
+.pager{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding:14px 18px;border-top:1px solid var(--line);color:var(--mute);font-size:14px}
+.pager .btns{display:flex;gap:6px}.pager button{min-height:40px;min-width:40px;border:1px solid var(--line);border-radius:10px;background:#fff;padding:0 12px}
+.pager button.on{background:var(--navy);color:#fff}.pager button:disabled{opacity:.4;cursor:default}
+/* detail */
+.back{border:0;background:none;color:var(--mute);display:inline-flex;gap:6px;align-items:center;padding:0;min-height:36px;font-weight:500;margin-bottom:6px}
+.compare{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.who-card{border:1px solid var(--line);border-radius:14px;padding:12px}
+.who-card .ph{aspect-ratio:4/3;max-height:240px;border-radius:10px;overflow:hidden;background:#1e293b;position:relative}
+.who-card .ph svg{position:absolute;inset:0;width:100%;height:100%}
+.narr{display:flex;gap:14px;align-items:flex-start}
+.narr .ic{width:44px;height:44px;border-radius:12px;background:var(--bluBg);display:grid;place-items:center;flex:none;color:var(--blu)}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+.actions .full{grid-column:1/-1}
+/* settings */
+.set{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:start}
+.field{padding:12px 0;border-bottom:1px solid var(--line)}
+.field:last-child{border:0}
+.field label{display:flex;justify-content:space-between;gap:10px;font-size:14px;font-weight:500}
+.field label output{color:var(--blu);font-family:'JetBrains Mono',monospace;font-size:13px;white-space:nowrap}
+input[type=range]{width:100%;accent-color:var(--navy);min-height:32px}
+.sw{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);font-size:14px}
+.sw:last-child{border:0}
+.tog{position:relative;width:46px;height:26px;flex:none}
+.tog input{position:absolute;inset:0;opacity:0;margin:0;cursor:pointer}
+.tog span{position:absolute;inset:0;border-radius:99px;background:#cbd5e1;transition:.2s;pointer-events:none}
+.tog span::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:.2s}
+.tog input:checked+span{background:var(--navy)}.tog input:checked+span::after{left:23px}
+.tog input:focus-visible+span{outline:2px solid var(--blu);outline-offset:2px}
+/* auth screens */
+.auth{min-height:100vh;display:grid;place-items:center;padding:24px;background:radial-gradient(circle at 50% 30%,#eaf1ff,var(--bg) 60%)}
+.login{display:grid;grid-template-columns:1fr 1fr;max-width:1080px;width:100%;overflow:hidden}
+.login .art{background:#f8fafc;border-right:1px solid var(--line);padding:28px;display:flex;flex-direction:column;gap:18px}
+.login .art svg{width:100%;height:auto}
+.login form{padding:clamp(24px,5vw,56px)}
+.flab{display:flex;justify-content:space-between;font-size:13px;font-weight:600;letter-spacing:.04em;margin:18px 0 8px}
+.inp{position:relative}
+.inp input{width:100%;min-height:50px;border:1px solid var(--line);border-radius:12px;padding:0 44px;font-size:16px;background:#fff}
+.inp>svg{position:absolute;left:14px;top:15px;width:20px;height:20px;color:var(--mute)}
+.inp .eye{position:absolute;right:4px;top:3px}
+.err{color:var(--red);font-size:15px;font-weight:600;margin:8px 0 0;min-height:18px}
+.check{display:flex;gap:10px;align-items:center;margin:16px 0 20px;font-size:15px}
+.check input{width:20px;height:20px;accent-color:var(--navy)}
+.foot{color:var(--mute);font-size:13px;text-align:center;margin-top:24px}
+.out{max-width:520px;width:100%;text-align:center;padding:40px 32px;border-top:4px solid #10b981}
+.out .logo{width:84px;height:84px;border-radius:22px;margin:0 auto 18px}.out .logo svg{width:40px;height:40px}
+.toast{position:fixed;right:20px;bottom:20px;max-width:380px;background:var(--navy);color:#fff;border-radius:14px;padding:14px 18px;box-shadow:0 12px 30px #0f172a40;transform:translateY(160%);visibility:hidden;transition:.25s;z-index:20}
+.toast.on{transform:none;visibility:visible}
+.mnav{display:none}
+@media(max-width:1100px){.grid4{grid-template-columns:repeat(2,minmax(0,1fr))}.two{grid-template-columns:minmax(0,1fr)}.set{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:760px){
+ .shell{grid-template-columns:minmax(0,1fr)}
+ .side{display:none}
+ .who div,.who{border:0;padding:0}.who div{display:none}
+ main.page{padding-bottom:96px}
+ .grid3{grid-template-columns:minmax(0,1fr)}
+ .stat b{font-size:24px}
+ .mnav{display:flex;position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);z-index:10;padding:6px 4px calc(6px + env(safe-area-inset-bottom))}
+ .mnav button{flex:1;border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;color:var(--mute);min-height:52px;position:relative}
+ .mnav button svg{width:22px;height:22px}.mnav button.on{color:var(--navy);font-weight:700}
+ .mnav .badge{position:absolute;top:2px;left:calc(50% + 6px);background:var(--red);color:#fff;border-radius:99px;font-size:10px;padding:0 5px;font-weight:700}
+ .login{grid-template-columns:minmax(0,1fr)}.login .art{display:none}
+ .compare{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
+ .stack thead{display:none}.stack tr{display:grid;padding:10px 4px;border-bottom:1px solid var(--line)}.stack td{border:0;padding:4px 12px;display:flex;justify-content:space-between;gap:12px;align-items:center}.stack td::before{content:attr(data-l);color:var(--mute);font-size:12px;font-weight:600}.stack td.r{justify-content:space-between}
+ .toast{left:16px;right:16px;bottom:84px;max-width:none}
+ .search{max-width:none}
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<section class="view auth" id="v-login">
+ <div class="card login">
+  <div class="art">
+   <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><span class="pill p-grn">AI surveillance suite v2.4</span><span class="pill p-gry">Node #01-Central</span></div>
+   <svg viewBox="0 0 400 300" aria-hidden="true"><defs><linearGradient id="lg1" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#e2e8f0"/><stop offset="1" stop-color="#94a3b8"/></linearGradient></defs>
+    <g fill="none" stroke="#cbd5e1"><circle cx="200" cy="170" r="70"/><circle cx="200" cy="170" r="105" stroke-dasharray="4 6"/><path d="M60 230h70M270 110h80M90 120l40 20"/></g>
+    <rect x="188" y="20" width="24" height="60" rx="6" fill="#cbd5e1"/><rect x="150" y="78" width="100" height="22" rx="8" fill="#94a3b8"/>
+    <path d="M128 100h144v34c0 40-32 66-72 66s-72-26-72-66z" fill="url(#lg1)"/><circle cx="200" cy="150" r="34" fill="#334155"/><circle cx="200" cy="150" r="16" fill="#0f172a"/><circle cx="206" cy="144" r="5" fill="#93c5fd"/>
+    <path d="M200 184l-70 100h140z" fill="#93c5fd" opacity=".18"/></svg>
+   <div class="grid3" style="grid-template-columns:1fr 1fr;margin:0">
+    <div class="card pad" style="padding:14px"><small style="color:var(--mute);font-size:12px">Campus optical AI</small><b style="display:block;font-size:14px">Real-time object tracking</b></div>
+    <div class="card pad" style="padding:14px"><small style="color:var(--mute);font-size:12px">Telemetry link</small><b style="display:block;font-size:14px">Person-bag association</b></div>
+   </div>
+   <div style="margin-top:auto;display:flex;justify-content:space-between;color:var(--mute);font-size:13px;border-top:1px solid var(--line);padding-top:14px"><span>Live security shield active</span><span class="mono">99.98% up</span></div>
+  </div>
+  <form id="loginForm" novalidate>
+   <div style="display:flex;gap:12px;align-items:center"><div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg></div><div><b style="font-size:20px;display:block">Nigehban Campus</b><small style="color:var(--mute);font-weight:600;letter-spacing:.06em">AI SURVEILLANCE SUITE</small></div></div>
+   <h1 style="margin-top:28px">Operator sign in</h1>
+   <p class="sub">Use your institutional account to open live campus monitoring.</p>
+   <div class="flab"><label for="em">Email address</label></div>
+   <div class="inp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M16 12v1.5a2.5 2.5 0 0 0 5 0V12a9 9 0 1 0-3.5 7.1"/></svg><input id="em" type="email" value="operator01@nigehban.edu" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false"></div>
+   <div class="flab"><label for="pw">Password</label><button type="button" class="link" id="forgot" style="min-height:0;padding:0;font-size:13px;letter-spacing:0">Forgot password?</button></div>
+   <div class="inp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><input id="pw" type="password" value="nigehban2026" autocomplete="off"><button type="button" class="iconbtn eye" id="eye" aria-label="Show password"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+   <p class="err" id="loginErr" aria-live="polite"></p>
+   <label class="check"><input type="checkbox" checked> Remember this terminal session</label>
+   <button class="btn dark wide" style="min-height:52px;font-size:16px" type="submit">Log in to monitoring <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+   <p style="color:var(--mute);font-size:13px;border-top:1px solid var(--line);margin-top:26px;padding-top:16px">Authorised campus security personnel only. Demo prototype: all data is sample data.</p>
+  </form>
+ </div>
+ <p class="foot">&copy; 2026 Nigehban Campus AI Surveillance Suite</p>
+</section>
+
+<!-- LOGGED OUT -->
+<section class="view auth" id="v-logged-out" hidden>
+ <div class="card out">
+  <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg></div>
+  <h1>You have been logged out</h1>
+  <p class="sub">Your session ended at <b class="mono" id="outTime">15:05</b>. Live monitoring continues in the background.</p>
+  <p class="pill p-grn" style="margin:20px 0">Active feeds and automatic alerts keep running</p>
+  <button class="btn dark wide" data-go="login" style="min-height:52px">Log in again</button>
+ </div>
+ <p class="foot">&copy; 2026 Nigehban Campus AI Surveillance Suite</p>
+</section>
+
+<!-- APP SHELL -->
+<div class="shell" id="app" hidden>
+ <aside class="side">
+  <div class="brand"><div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg></div><div><b>Nigehban Campus</b><small>AI SURVEILLANCE SUITE</small></div></div>
+  <nav class="navlist" aria-label="Main">
+   <button class="nav" data-go="dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="8" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="15" width="7" height="6" rx="1.5"/></svg>Dashboard</button>
+   <button class="nav" data-go="live"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/></svg>Live Monitoring<span class="dot"></span></button>
+   <button class="nav" data-go="alerts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l9 16H3z"/><path d="M12 10v4M12 17h.01"/></svg>Alerts<span class="badge" data-badge>2</span></button>
+   <button class="nav" data-go="history"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>History</button>
+   <button class="nav" data-go="app-settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg>Settings</button>
+  </nav>
+  <div class="me"><div class="av">OP</div><div><b>Operator 01</b><small>Security Control Room</small></div><button class="iconbtn" data-go="logged-out" aria-label="Log out" title="Log out"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 4h4v16h-4M10 8l-4 4 4 4M6 12h11"/></svg></button></div>
+ </aside>
+
+ <div>
+  <header class="topbar">
+   <form class="search" id="searchForm" role="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input id="q" placeholder="Search e.g. Person #12, Bag #31, CAM 03" aria-label="Search" title="Try: Person #12, person 2, P7, Bag #31, library, theft"></form>
+   <button class="iconbtn bell" data-go="alerts" aria-label="Alerts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 8 3 8H3s3-1 3-8"/><path d="M10 20a2 2 0 0 0 4 0"/></svg><i></i></button>
+   <div class="who"><button class="av" data-go="app-settings" aria-label="Account settings">OP</button><div><b>Operator 01</b><small>Security Control Room</small></div></div>
+  </header>
+
+  <main class="page">
+   <!-- DASHBOARD -->
+   <section class="view" id="v-dashboard" hidden>
+    <div class="head"><div><h1>Dashboard</h1><p class="sub">Live overview of campus cameras and unattended bags</p></div></div>
+    <div class="grid4" id="dashStats"></div>
+    <div class="two">
+     <div class="card" style="overflow:hidden">
+      <div class="cam-h"><span class="rec"></span><b>CAM 01 &mdash; Main Gate Corridor (Live)</b><span class="tag mono">1080p &middot; 30 FPS</span><span style="margin-left:auto" class="pill p-grn">Online</span></div>
+      <div class="feed" id="dashFeed"></div>
+      <div class="cam-f"><span class="k" style="--c:var(--blu)">1 tracked person</span><span class="k" style="--c:var(--org)">1 target bag</span><span class="k mono" style="--c:#10b981">YOLO26n + ByteTrack &middot; 22 FPS</span><button class="btn" style="margin-left:auto;min-height:36px" data-go="live">Open live view</button></div>
+     </div>
+     <div class="col">
+      <div class="card pad" id="target"></div>
+      <div id="dashAlerts" class="col"></div>
+      <div class="card pad"><h2>Today's alerts<small class="mono" id="donutTotal"></small></h2><div style="display:flex;gap:18px;align-items:center;margin-top:14px" id="donut"></div></div>
+     </div>
+    </div>
+   </section>
+
+   <!-- LIVE -->
+   <section class="view" id="v-live" hidden>
+    <div class="head"><div><h1>Live Monitoring <span class="pill p-grn" style="font-size:13px;vertical-align:middle">System online</span></h1><p class="sub">Real-time CCTV feeds with tracking overlays</p></div>
+     <div class="right"><div class="seg" id="layoutSeg"><button class="on" data-l="1">1&times;1 Feed</button><button data-l="4">2&times;2 Grid</button></div>
+      <select class="sel" id="camSel" aria-label="Camera"><option value="CAM 03">CAM 03 &mdash; Cafeteria Hall</option><option value="CAM 01">CAM 01 &mdash; Main Gate Corridor</option><option value="CAM 02">CAM 02 &mdash; Library Entrance</option><option value="CAM 04">CAM 04 &mdash; Admin Block Lobby</option></select></div></div>
+    <div class="two">
+     <div class="card" style="overflow:hidden" id="liveMain"></div>
+     <div class="card pad" id="inspector"></div>
+    </div>
+   </section>
+
+   <!-- ALERTS -->
+   <section class="view" id="v-alerts" hidden>
+    <div class="head"><div><h1>Security Alerts</h1><p class="sub">All abandoned-bag and possible-theft alerts</p></div></div>
+    <div class="grid4" id="alertStats"></div>
+    <div class="card">
+     <div class="tblbar"><div class="seg" id="typeSeg"><button class="on" data-t="all">All</button><button data-t="abandoned">Abandoned</button><button data-t="theft">Possible theft</button></div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><span id="qNote" class="pill p-blu" hidden></span><select class="sel" id="statusSel" aria-label="Status"><option value="all">All statuses</option><option>Active</option><option>Acknowledged</option><option value="closed">Resolved / closed</option></select><button class="btn" id="refresh" aria-label="Refresh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5"/></svg></button></div></div>
+     <table class="stack"><thead><tr><th>Alert ID</th><th>Type</th><th>Bag</th><th>Owner</th><th>Carrier</th><th>Camera</th><th>Time</th><th>Status</th><th class="r">Action</th></tr></thead><tbody id="alertRows"></tbody></table>
+    </div>
+   </section>
+
+   <!-- ALERT DETAIL -->
+   <section class="view" id="v-alert" hidden></section>
+
+   <!-- PERSON PROFILE -->
+   <section class="view" id="v-person" hidden></section>
+
+   <!-- HISTORY -->
+   <section class="view" id="v-history" hidden>
+    <div class="head"><div><h1>History</h1><p class="sub">Past alerts and how they were resolved</p></div></div>
+    <div class="grid3" id="histStats"></div>
+    <div class="card">
+     <div class="tblbar"><div class="seg" id="hSeg"><button class="on" data-t="all">All</button><button data-t="abandoned">Abandoned</button><button data-t="theft">Possible theft</button></div><select class="sel" id="range" aria-label="Date range"><option value="7">13&ndash;20 Nov 2026</option><option value="2">Last 2 days</option></select></div>
+     <table class="stack"><thead><tr><th>Date &amp; time</th><th>Alert ID</th><th>Type</th><th>Bag</th><th>Camera</th><th>Outcome</th><th class="r">Action</th></tr></thead><tbody id="histRows"></tbody></table>
+     <div class="pager"><span id="pageInfo"></span><div class="btns"><button id="prev">Previous</button><span id="pageBtns" style="display:flex;gap:6px"></span><button id="next">Next</button></div></div>
+    </div>
+   </section>
+
+   <!-- SETTINGS -->
+   <section class="view" id="v-app-settings" hidden>
+    <div class="head"><div><h1>Settings</h1><p class="sub">Detection rules, theft check, cameras and notifications</p></div></div>
+    <div class="set">
+     <div class="card pad"><h2>Detection rules</h2>
+      <div class="field"><label for="sNear">Near distance <output id="oNear"></output></label><input type="range" id="sNear" min="0.3" max="1" step="0.1"></div>
+      <div class="field"><label for="sOwn">Owner confirmed after <output id="oOwn"></output></label><input type="range" id="sOwn" min="10" max="60" step="5"></div>
+      <div class="field"><label for="sAb">Abandon after <output id="oAb"></output></label><input type="range" id="sAb" min="30" max="300" step="10"></div>
+     </div>
+     <div class="card pad"><h2>Theft check</h2>
+      <div class="sw">Alert when a non-owner carries a bag<label class="tog"><input type="checkbox" id="tTheft"><span></span></label></div>
+      <div class="field"><label for="sMatch">Appearance match threshold <output id="oMatch"></output></label><input type="range" id="sMatch" min="50" max="90" step="5"></div>
+      <div class="sw">Allow authorised pickup by staff<label class="tog"><input type="checkbox" id="tStaff"><span></span></label></div>
+     </div>
+     <div class="card pad"><h2>Cameras and notifications</h2>
+      <div id="camToggles"></div>
+      <div class="sw">Alert sound<label class="tog"><input type="checkbox" id="tSound"><span></span></label></div>
+      <div class="sw">Email alerts<label class="tog"><input type="checkbox" id="tEmail"><span></span></label></div>
+     </div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:20px"><button class="btn dark" id="save">Save changes</button><button class="btn" id="reset">Reset to defaults</button><button class="btn" style="margin-left:auto;color:var(--red)" data-go="logged-out">Log out</button></div>
+   </section>
+  </main>
+ </div>
+
+ <nav class="mnav" aria-label="Main">
+  <button data-go="dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="8" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="15" width="7" height="6" rx="1.5"/></svg>Dashboard</button>
+  <button data-go="live"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/></svg>Live</button>
+  <button data-go="alerts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l9 16H3z"/><path d="M12 10v4M12 17h.01"/></svg>Alerts<span class="badge" data-badge>2</span></button>
+  <button data-go="history"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>History</button>
+  <button data-go="app-settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>Settings</button>
+ </nav>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+{
+// ---------- dummy data ----------
+const CAMS={'CAM 01':'Main Gate Corridor','CAM 02':'Library Entrance','CAM 03':'Cafeteria Hall','CAM 04':'Admin Block Lobby'};
+const alerts=[
+ {id:'A-004',type:'theft',time:'14:47',bag:'Bag #18',desc:'brown handbag',owner:'Person #2',carrier:'Person #12',cam:'CAM 03',status:'Active',dist:'3.1',m:'5.3',away:'00:35',move:'0.6 m/s toward Exit B',conf:'0.94',match:18,ref:'SEC-2026-004-T'},
+ {id:'A-003',type:'abandoned',time:'14:32',bag:'Bag #31',desc:'black backpack',owner:'Person #7',cam:'CAM 01',status:'Active',dist:'2.5',m:'4.2',sep:68,conf:'0.91',ref:'SEC-2026-003-A'},
+ {id:'A-002',type:'abandoned',time:'13:10',bag:'Bag #22',desc:'grey suitcase',owner:'Person #4',cam:'CAM 02',status:'Acknowledged',dist:'2.1',m:'3.6',sep:75,conf:'0.89',ref:'SEC-2026-002-A'},
+ {id:'A-001',type:'theft',time:'11:02',bag:'Bag #9',desc:'blue backpack',owner:'Person #5',carrier:'Person #6',cam:'CAM 04',status:'Authorised pickup',dist:'2.8',m:'4.8',away:'00:22',move:'0.5 m/s toward Admin exit',conf:'0.90',match:91,ref:'SEC-2026-001-T'}
+];
+const history=[
+ ['19 Nov 16:20','A-H12','abandoned','Bag #14','CAM 02','Owner returned'],
+ ['19 Nov 12:05','A-H11','theft','Bag #11','CAM 03','Authorised pickup (staff)'],
+ ['18 Nov 10:40','A-H10','abandoned','Bag #8','CAM 01','Collected by security'],
+ ['17 Nov 15:55','A-H09','theft','Bag #6','CAM 04','Confirmed theft, reported'],
+ ['16 Nov 09:30','A-H08','abandoned','Bag #3','CAM 02','False alarm'],
+ ['16 Nov 08:10','A-H07','abandoned','Bag #27','CAM 03','Owner returned'],
+ ['15 Nov 17:45','A-H06','theft','Bag #19','CAM 01','False alarm'],
+ ['15 Nov 11:20','A-H05','abandoned','Bag #4','CAM 04','Collected by security'],
+ ['14 Nov 14:05','A-H04','abandoned','Bag #12','CAM 02','Owner returned'],
+ ['14 Nov 09:50','A-H03','theft','Bag #2','CAM 03','Authorised pickup (friend)'],
+ ['13 Nov 16:35','A-H02','abandoned','Bag #16','CAM 01','Owner returned'],
+ ['13 Nov 10:15','A-H01','abandoned','Bag #5','CAM 04','False alarm']
+].map(r=>({date:r[0],id:r[1],type:r[2],bag:r[3],cam:r[4],status:r[5],hist:true,owner:'Person #'+(30+parseInt(r[1].slice(3))),carrier:r[2]==='theft'?'Person #'+(50+parseInt(r[1].slice(3))):'',desc:'bag',dist:'2.4',m:'4.1',sep:72,away:'00:30',move:'0.5 m/s',conf:'0.90',match:r[5].startsWith('Authorised')?88:21,ref:'SEC-2026-'+r[1].slice(2)}));
+const DEF={near:0.5,own:30,ab:60,theft:true,match:70,staff:true,sound:true,email:false,cams:{'CAM 01':true,'CAM 02':true,'CAM 03':true,'CAM 04':true}};
+let S=JSON.parse(JSON.stringify(DEF));
+const ui={type:'all',status:'all',q:'',hType:'all',hPage:1,hRange:7,layout:1,cam:'CAM 03',current:'A-004'};
+
+// ---------- helpers ----------
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const mmss=s=>String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
+const typePill=t=>t==='theft'?'<span class="pill p-pur">Possible theft</span>':'<span class="pill p-red">Abandoned</span>';
+const statPill=s=>{const c=s==='Active'?(1):0;const cls=s==='Active'?'p-red':s==='Acknowledged'?'p-amb':/False/.test(s)?'p-gry':/Confirmed/.test(s)?'p-pur':'p-grn';return`<span class="pill ${cls}">${esc(s)}</span>`};
+const pBtn=(name,col)=>name?`<button data-person="${name.replace(/\D/g,'')}" style="border:0;background:none;padding:0;color:${col||'var(--blu)'};font-weight:600;text-decoration:underline;text-underline-offset:3px">${name}</button>`:'&mdash;';
+const closed=s=>!['Active','Acknowledged'].includes(s);
+let tT;function toast(m){const t=$('toast');t.textContent=m;t.classList.add('on');clearTimeout(tT);tT=setTimeout(()=>t.classList.remove('on'),2600)}
+const icon={cam:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/></svg>',user:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>',bag:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="8" width="16" height="13" rx="2"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>',bell:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l9 16H3z"/><path d="M12 10v4M12 17h.01"/></svg>',ok:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg>',clock:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',doc:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h9l4 4v14H6z"/><path d="M9 12h7M9 16h7"/></svg>'};
+const stat=(label,val,ic,bg,col,extra='')=>`<div class="card stat"><div><span>${label}</span><b style="color:${col||'inherit'}">${val}</b>${extra}</div><div class="ic" style="background:${bg};color:${col||'var(--ink)'}">${ic}</div></div>`;
+
+// ---------- CCTV scenes (SVG) ----------
+function person(x,y,h,col,label,dash){const w=h*.4;return`<g><rect x="${x-w*.28}" y="${y-h*.78}" width="${w*.56}" height="${h*.7}" rx="${w*.2}" fill="#334155"/><circle cx="${x}" cy="${y-h*.86}" r="${h*.09}" fill="#475569"/><rect x="${x-w/2}" y="${y-h}" width="${w}" height="${h}" fill="none" stroke="${col}" stroke-width="2.5" ${dash?'stroke-dasharray="7 5"':''}/><rect x="${x-w/2}" y="${y-h-26}" width="${label.length*8.6+14}" height="24" rx="4" fill="${col}"/><text x="${x-w/2+7}" y="${y-h-9}" font-family="JetBrains Mono,monospace" font-size="13" font-weight="600" fill="#fff">${label}</text></g>`}
+function bag(x,y,s,col,label){return`<g><rect x="${x-s/2}" y="${y-s*.4}" width="${s}" height="${s*.8}" rx="5" fill="#64748b"/><path d="M${x-s*.2} ${y-s*.4}v-6a${s*.2} 6 0 0 1 ${s*.4} 0v6" fill="none" stroke="#94a3b8" stroke-width="3"/><rect x="${x-s/2-8}" y="${y-s*.4-8}" width="${s+16}" height="${s*.8+16}" fill="none" stroke="${col}" stroke-width="2.5"/><rect x="${x-s/2-8}" y="${y-s*.4-34}" width="${label.length*8.6+14}" height="24" rx="4" fill="${col}"/><text x="${x-s/2-1}" y="${y-s*.4-17}" font-family="JetBrains Mono,monospace" font-size="13" font-weight="600" fill="${col==='#f59e0b'?'#1c1917':'#fff'}">${label}</text></g>`}
+function room(cam,t){return`<rect width="800" height="450" fill="#0b1220"/><g stroke="#ffffff10">${[0,1,2,3,4,5,6,7,8].map(i=>`<line x1="${400+(i*100-400)*.3}" y1="170" x2="${i*100}" y2="450"/>`).join('')}<line x1="0" y1="170" x2="800" y2="170"/><line x1="0" y1="260" x2="800" y2="260"/><line x1="0" y1="360" x2="800" y2="360"/></g><rect x="610" y="40" width="80" height="130" fill="#111a2e"/><rect x="70" y="60" width="160" height="70" fill="#111a2e"/><rect x="16" y="14" width="${cam.length*8.6+120}" height="28" rx="6" fill="#00000099"/><circle cx="32" cy="28" r="5" fill="#e11d48"/><text x="44" y="33" font-family="JetBrains Mono,monospace" font-size="13" fill="#e2e8f0">REC &middot; ${cam}</text><rect x="636" y="14" width="150" height="28" rx="6" fill="#00000099"/><text x="648" y="33" font-family="JetBrains Mono,monospace" font-size="13" fill="#e2e8f0">20/11/2026 ${t}</text>`}
+function line(x1,y1,x2,y2,col,label){const mx=(x1+x2)/2,my=(y1+y2)/2;return`<line class="flow" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${col}" stroke-width="2.5"/><rect x="${mx-80}" y="${my-14}" width="160" height="28" rx="14" fill="#0b1220" stroke="${col}"/><text x="${mx}" y="${my+5}" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="13" fill="#e2e8f0">${label}</text>`}
+function scene(cam){
+ const t={'CAM 01':'14:32:18','CAM 02':'14:51:02','CAM 03':'14:47:05','CAM 04':'14:52:40'}[cam];
+ let g=room(cam+' '+CAMS[cam].toUpperCase(),t);
+ if(cam==='CAM 01'){const thr=S.ab;g+=line(255,360,505,372,'#e11d48','2.5 body-heights')+person(220,370,230,'#2563eb','Person #7 leaving',true)+bag(540,370,56,'#e11d48','Bag #31 ABANDONED')}
+ else if(cam==='CAM 03'){g+=line(150,260,560,330,'#9333ea','3.1 body-heights')+person(130,270,130,'#2563eb','Person #2 owner',false)+person(560,400,250,'#9333ea','Person #12 0.90',false)+bag(610,320,46,'#f59e0b','Bag #18 MOVING')}
+ else if(cam==='CAM 02'){g+=person(300,390,240,'#2563eb','Person #4 0.92',false)+bag(370,380,52,'#059669','Bag #22 with owner')}
+ else{g+=`<text x="400" y="300" text-anchor="middle" font-family="Inter,sans-serif" font-size="18" fill="#64748b">No bags in view &middot; 2 people passing</text>`+person(520,330,170,'#2563eb','Person #9 0.88',false)}
+ if(!S.cams[cam])g=`<rect width="800" height="450" fill="#0b1220"/><text x="400" y="230" text-anchor="middle" font-family="Inter,sans-serif" font-size="20" fill="#94a3b8">${cam} is switched off in Settings</text>`;
+ return`<svg viewBox="0 0 800 450" role="img" aria-label="Simulated CCTV frame from ${cam}">${g}</svg>`;
+}
+function portrait(seed,col){return`<svg viewBox="0 0 120 90" preserveAspectRatio="xMidYMid slice"><rect width="120" height="90" fill="${seed?'#273449':'#1f2937'}"/><g style="filter:blur(2px)"><circle cx="60" cy="32" r="13" fill="${seed?'#64748b':'#475569'}"/><path d="M34 90c2-26 12-38 26-38s24 12 26 38z" fill="${col}"/></g><rect x="8" y="74" width="104" height="12" rx="3" fill="#00000088"/><text x="60" y="82.5" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="6.5" fill="#e2e8f0">${seed?'last seen with bag 14:46':'in motion 0.6 m/s'}</text></svg>`}
+
+// ---------- renderers ----------
+const active=()=>alerts.filter(a=>a.status==='Active');
+function badges(){const n=active().length;document.querySelectorAll('[data-badge]').forEach(b=>{b.textContent=n;b.hidden=!n})}
+
+function renderDashboard(){
+ const act=active(),ab=act.filter(a=>a.type==='abandoned').length,th=act.length-ab,camsOn=Object.values(S.cams).filter(Boolean).length;
+ $('dashStats').innerHTML=stat('Active cameras',`${camsOn}<small style="font-size:14px;color:var(--mute);font-weight:500"> / 4 online</small>`,icon.cam,'var(--grnBg)','var(--grn)')+stat('People tracked','9',icon.user,'var(--bluBg)','var(--blu)')+stat('Bags tracked','5',icon.bag,'var(--ambBg)','var(--amb)')+stat('Active alerts',act.length,icon.bell,'var(--redBg)','var(--red)',`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">${ab?`<span class="pill p-red">${ab} abandoned</span>`:''}${th?`<span class="pill p-pur">${th} possible theft</span>`:''}${!act.length?'<span class="pill p-grn">All clear</span>':''}</div>`);
+ $('dashFeed').innerHTML=scene('CAM 01');
+ const a3=alerts.find(a=>a.id==='A-003'),pct=Math.min(100,Math.round(a3.sep/S.ab*100));
+ $('target').innerHTML=`<h2><span style="width:10px;height:10px;border-radius:50%;background:var(--org)"></span>Current target: Bag #31<small class="mono">ID #31-B</small></h2>
+  <div style="margin-top:10px"><div class="kv"><span>Owner</span><b style="color:var(--blu)">Person #7</b></div><div class="kv"><span>Distance</span><b class="mono">2.5 body-heights <span style="color:var(--mute);font-weight:400">(about 4.2 m)</span></b></div><div class="kv"><span>Status</span>${a3.sep>=S.ab?'<span class="pill p-red">Separated</span>':'<span class="pill p-amb">Separating</span>'}</div><div class="kv"><span>Separation time</span><b class="mono" style="color:var(--red)">${mmss(a3.sep)}</b></div><div class="kv"><span>Threshold</span><b class="mono">${mmss(S.ab)}</b></div></div>
+  <div style="display:flex;justify-content:space-between;font-size:13px;margin:12px 0 6px"><span style="color:var(--mute)">Alert threshold progress</span><b class="mono" style="color:${pct>=100?'var(--red)':'var(--amb)'}">${pct}%${pct>=100?' (exceeded)':''}</b></div><div class="bar"><i style="width:${pct}%;background:${pct>=100?'var(--red)':'var(--amb)'}"></i></div>`;
+ $('dashAlerts').innerHTML=alerts.filter(a=>a.status==='Active').map(a=>`<div class="alertcard ${a.type==='theft'?'th':'ab'}">${typePill(a.type)} <span class="mono" style="color:var(--mute);font-size:13px">${a.time}</span><b style="display:block;margin-top:8px">${a.bag} &middot; ${a.cam}</b><p>${a.type==='theft'?`Carried by ${a.carrier} while owner ${a.owner} is away`:`Owner ${a.owner} away for ${mmss(a.sep)}`}</p><button class="btn ${a.type==='theft'?'pur':'red'} wide" data-alert="${a.id}">View alert &rarr;</button></div>`).join('')||'<div class="card pad" style="color:var(--mute)">No active alerts. Everything is with its owner.</div>';
+ const c={a:active().length,k:alerts.filter(a=>a.status==='Acknowledged').length};c.r=alerts.length-c.a-c.k;const tot=alerts.length;let off=0;const seg=(v,col)=>{const len=v/tot*100;const s=`<circle r="15.9" cx="20" cy="20" fill="none" stroke="${col}" stroke-width="6" stroke-dasharray="${len} ${100-len}" stroke-dashoffset="${25-off}"/>`;off+=len;return s};
+ $('donutTotal').textContent=tot+' total';
+ $('donut').innerHTML=`<svg viewBox="0 0 40 40" width="120" height="120" style="flex:none"><circle r="15.9" cx="20" cy="20" fill="none" stroke="#eef2f7" stroke-width="6"/>${seg(c.a,'#e11d48')}${seg(c.k,'#f59e0b')}${seg(c.r,'#10b981')}<text x="20" y="22" text-anchor="middle" font-size="8" font-weight="700" fill="#0f172a">${tot}</text></svg><div style="flex:1">${[['Active',c.a,'#e11d48'],['Acknowledged',c.k,'#f59e0b'],['Resolved',c.r,'#10b981']].map(r=>`<div class="kv"><span style="display:flex;gap:8px;align-items:center"><i style="width:10px;height:10px;border-radius:50%;background:${r[2]}"></i>${r[0]}</span><b>${r[1]}</b></div>`).join('')}</div>`;
+}
+
+const INSP={
+ 'CAM 03':{bag:'Bag #18',state:['Possible theft','p-pur'],msg:'Person #12 is carrying a registered bag away from its owner.',rows:[['Owner','Person #2'],['Carried by','Person #12 (not the owner)'],['Appearance match with owner','18% (needs 70%)'],['Bag movement','0.6 m/s'],['Owner away','00:35'],['Zone','Cafeteria Hall']],alert:'A-004'},
+ 'CAM 01':{bag:'Bag #31',state:['Abandoned','p-red'],msg:'Owner Person #7 left the bag and has been away longer than the threshold.',rows:[['Owner','Person #7'],['Distance','2.5 body-heights (about 4.2 m)'],['Separation time','01:08'],['Bag movement','Stationary'],['Zone','Main Gate Corridor']],alert:'A-003'},
+ 'CAM 02':{bag:'Bag #22',state:['With owner','p-grn'],msg:'Owner Person #4 is next to the bag. No action needed.',rows:[['Owner','Person #4'],['Distance','0.3 body-heights (about 50 cm)'],['Bag movement','Stationary'],['Zone','Library Entrance']],alert:null},
+ 'CAM 04':{bag:'No bag selected',state:['Clear','p-grn'],msg:'No bags in view. People are only passing through.',rows:[['People in view','2'],['Bags in view','0'],['Zone','Admin Block Lobby']],alert:null}
+};
+function renderLive(){
+ const cam=ui.cam,on=S.cams[cam];
+ $('liveMain').innerHTML=ui.layout===1?`<div class="cam-h"><span class="rec"></span><b>${cam} &mdash; ${CAMS[cam]}</b><span class="tag mono">1920&times;1080 &middot; 30 FPS</span><span style="margin-left:auto" class="pill ${on?'p-grn':'p-gry'}">${on?'Online':'Off'}</span></div><div class="feed">${scene(cam)}</div><div class="cam-f"><span class="k" style="--c:var(--blu)">Tracking ${cam==='CAM 03'?6:cam==='CAM 04'?2:3} persons</span><span class="k" style="--c:var(--pur)">${INSP[cam].state[0]}</span><span class="mono">Model: YOLO26n + ByteTrack &middot; 22 FPS &middot; 18 ms</span></div>`
+  :`<div class="cam-h"><span class="rec"></span><b>All cameras</b><span class="tag">Tap a camera to open it</span></div><div class="grid2x2">${Object.keys(CAMS).map(c=>`<button data-cam="${c}" style="border:0;padding:0;background:none;text-align:left"><div class="feed sm">${scene(c)}</div><div class="lbl">${c} &middot; ${CAMS[c]}</div></button>`).join('')}</div>`;
+ const d=INSP[cam];
+ $('inspector').innerHTML=`<h2>${icon.bag.replace('<svg','<svg width="20" height="20"')} ${d.bag} inspector<small class="mono">${cam}</small></h2>
+  <div style="background:#f8fafc;border:1px solid var(--line);border-radius:14px;padding:14px;margin:14px 0"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><b style="font-size:13px;color:var(--mute)">Current detection state</b><span class="pill ${d.state[1]}">${d.state[0]}</span></div><p style="margin:8px 0 0;font-size:14px">${d.msg}</p></div>
+  ${d.rows.map(r=>`<div class="kv"><span>${r[0]}</span><b class="mono">${r[1]}</b></div>`).join('')}
+  ${d.alert?`<div style="display:grid;gap:10px;margin-top:16px"><button class="btn dark" data-alert="${d.alert}">Open alert</button><button class="btn" id="dismiss" data-id="${d.alert}">Dismiss false alarm</button></div>`:`<p style="color:var(--mute);font-size:13px;margin-top:16px">Nothing to act on for this camera.</p>`}`;
+ $('camSel').value=cam;
+ document.querySelectorAll('#layoutSeg button').forEach(b=>b.classList.toggle('on',+b.dataset.l===ui.layout));
+}
+
+function renderAlerts(){
+ const c={t:alerts.length,a:active().length,k:alerts.filter(a=>a.status==='Acknowledged').length};c.r=c.t-c.a-c.k;
+ $('alertStats').innerHTML=stat('Total alerts',c.t,icon.bell,'#f1f5f9')+stat('Active',c.a,icon.bell,'var(--redBg)','var(--red)')+stat('Acknowledged',c.k,icon.clock,'var(--ambBg)','var(--amb)')+stat('Resolved',c.r,icon.ok,'var(--grnBg)','var(--grn)');
+ const q=ui.q.toLowerCase();
+ const pm=q.match(/^(?:person\s*#?\s*|p\s*#?\s*|#)(\d+)$/), bm=q.match(/^bag\s*#?\s*(\d+)$/);
+ const hit=a=>{if(!q)return true;
+  if(pm){const p='Person #'+pm[1];return a.owner===p||a.carrier===p}
+  if(bm)return a.bag==='Bag #'+bm[1];
+  return[a.id,a.bag,a.owner,a.carrier||'',a.cam,CAMS[a.cam],a.status,a.type==='theft'?'possible theft':'abandoned'].join(' ').toLowerCase().includes(q)};
+ const rows=alerts.filter(a=>(ui.type==='all'||a.type===ui.type)&&(ui.status==='all'||(ui.status==='closed'?closed(a.status):a.status===ui.status))&&hit(a));
+ const label=pm?`Person #${pm[1]}`:bm?`Bag #${bm[1]}`:esc(ui.q);
+ $('qNote').hidden=!ui.q;$('qNote').innerHTML=ui.q?`Search: ${label} <button style="border:0;background:none;font-weight:700" id="clearQ" aria-label="Clear search">&times;</button>`:'';
+ $('alertRows').innerHTML=rows.map(a=>`<tr><td data-l="Alert ID" class="mono"><b>${a.id}</b></td><td data-l="Type">${typePill(a.type)}</td><td data-l="Bag"><b>${a.bag}</b><br><small style="color:var(--mute)">${a.desc}</small></td><td data-l="Owner">${pBtn(a.owner)}</td><td data-l="Carrier">${pBtn(a.carrier,'var(--pur)')}</td><td data-l="Camera">${a.cam}<br><small style="color:var(--mute)">${CAMS[a.cam]}</small></td><td data-l="Time" class="mono">${a.time}</td><td data-l="Status">${statPill(a.status)}</td><td data-l="Action" class="r"><button class="btn dark" style="min-height:38px" data-alert="${a.id}">View &rarr;</button></td></tr>`).join('')||`<tr><td colspan="9" class="empty">No alerts match ${ui.q?`"${label}"`:'these filters'}. ${ui.q?'Try Person #2, Person #7, Person #12 or Bag #31.':''}</td></tr>`;
+ document.querySelectorAll('#typeSeg button').forEach(b=>b.classList.toggle('on',b.dataset.t===ui.type));
+}
+
+function findAlert(id){return alerts.find(a=>a.id===id)||history.find(a=>a.id===id)}
+function renderDetail(){
+ const a=findAlert(ui.current);if(!a)return;
+ const th=a.type==='theft',col=th?'var(--pur)':'var(--red)',over=a.sep-S.ab;
+ const sceneCam=th?'CAM 03':'CAM 01';
+ const done=closed(a.status)||a.hist;
+ const actions=done?`<p style="margin:16px 0 0;font-size:14px;color:var(--mute)">This alert is closed: <b style="color:var(--ink)">${esc(a.status)}</b>.</p>${a.hist?'':`<button class="btn wide" style="margin-top:12px" data-act="Active" data-id="${a.id}">Reopen alert</button>`}`:
+  `<div class="actions">${a.status==='Acknowledged'?'<span class="pill p-amb" style="justify-content:center;min-height:44px">Acknowledged</span>':`<button class="btn" data-act="Acknowledged" data-id="${a.id}">+ Acknowledge</button>`}${th?`<button class="btn pur" data-act="Confirmed theft" data-id="${a.id}">Confirm theft</button><button class="btn soft full" data-act="Authorised pickup" data-id="${a.id}">Authorised pickup (friend or staff)</button>`:`<button class="btn dark" data-act="Resolved" data-id="${a.id}">&#10003; Resolve</button>`}</div><div style="text-align:center"><button class="link" data-act="False alarm" data-id="${a.id}">Mark false alarm</button></div>`;
+ const rows=th?[['Alert type',typePill('theft')],['Bag',`${a.bag} <small style="color:var(--mute)">(${a.desc})</small>`],['Registered owner',pBtn(a.owner)],['Active carrier',pBtn(a.carrier,'var(--pur)')],['Owner distance',`<span style="color:var(--red)">${a.dist} body-heights</span> <small style="color:var(--mute)">(about ${a.m} m)</small>`],['Owner away',a.away],['Bag movement',a.move],['Camera',`${a.cam} (${CAMS[a.cam]})`],['Time',a.hist?a.date:a.time],['Status',statPill(a.status)]]
+  :[['Type',typePill('abandoned')],['Bag',`${a.bag} <small style="color:var(--mute)">(${a.desc})</small>`],['Owner',pBtn(a.owner)],['Camera',`${a.cam} (${CAMS[a.cam]})`],['Time',a.hist?a.date:a.time],['Distance',`${a.dist} body-heights <small style="color:var(--mute)">(about ${a.m} m)</small>`],['Separation',`<span style="color:var(--red)">${mmss(a.sep)}</span> ${over>0?`<span class="pill p-red">+${over} s over</span>`:''}`,true],['Threshold',mmss(S.ab)],['Status',statPill(a.status)]];
+ $('v-alert').innerHTML=`<button class="back" data-go="alerts">&larr; Back to Alerts</button>
+  <div class="head"><div><h1>Alert ${a.id} &mdash; ${th?'Possible theft':'Abandoned bag'} ${statPill(a.status)}</h1><p class="sub mono" style="font-size:13px">REF ${a.ref} &middot; Triggered ${a.hist?a.date:'today at '+a.time}</p></div></div>
+  <div class="two">
+   <div class="col">
+    <div class="card" style="overflow:hidden"><div class="cam-h">${icon.cam.replace('<svg','<svg width="18" height="18"')}<b>${a.cam} &mdash; ${CAMS[a.cam]} snapshot (${a.hist?a.date:a.time})</b><span class="tag mono" style="margin-left:auto">1080p &middot; 30 FPS</span></div><div class="feed">${scene(sceneCam).replace(/Bag #\d+/g,a.bag).replace(/Person #(7|12)\b/,th?a.carrier:a.owner)}</div><div class="cam-f"><span>Detection zone: <b style="color:var(--ink)">${CAMS[a.cam]}</b></span><span class="mono" style="margin-left:auto">AI confidence ${a.conf}</span></div></div>
+    ${th?`<div class="card pad"><h2>Is the carrier the owner?<small>${a.match>=S.match?'<span class="pill p-grn">Match: owner</span>':'<span class="pill p-red">Not the owner</span>'}</small></h2><p class="sub" style="font-size:13px;margin-bottom:14px">Appearance comparison between the bag's owner and the person carrying it</p>
+     <div class="compare"><div class="who-card"><b style="font-size:14px">Owner: ${a.owner}</b> <span class="pill p-grn" style="font-size:11px">Registered</span><div class="ph" style="margin-top:8px">${portrait(1,'#0f766e')}</div></div><div class="who-card"><b style="font-size:14px">Carrier: ${a.carrier}</b> <span class="pill p-pur" style="font-size:11px">Detected</span><div class="ph" style="margin-top:8px">${portrait(0,'#6b21a8')}</div></div></div>
+     <div style="display:flex;justify-content:space-between;font-size:14px;margin:16px 0 6px"><span>Appearance match score: <b style="color:${a.match>=S.match?'var(--grn)':'var(--red)'}">${a.match}%</b></span><span class="mono" style="color:var(--mute)">needs ${S.match}%</span></div><div class="bar"><i style="width:${a.match}%;background:${a.match>=S.match?'var(--grn)':'var(--red)'}"></i></div></div>`:''}
+    <div class="card pad narr"><div class="ic">${icon.doc}</div><div><b>Automated incident narrative</b><p style="margin:6px 0 0;color:#334155">${th?`${a.bag} started moving with ${a.carrier} while its owner, ${a.owner}, was ${a.dist} body-heights away for ${a.away.replace(/^00:/,'')} seconds.`:`${a.owner} moved away from ${a.bag} and stayed more than ${a.dist} body-heights away for longer than the ${S.ab}-second threshold.`}</p></div></div>
+   </div>
+   <div class="card pad"><h2>Alert details<small class="mono" style="color:${col}">${th?'THEFT_CHECK':'ABANDON_CHECK'}</small></h2><div style="margin-top:8px">${rows.map(r=>`<div class="kv${r[2]&&over>0?' hot':''}"><span>${r[0]}</span><b>${r[1]}</b></div>`).join('')}</div>${actions}</div>
+  </div>`;
+}
+
+// ---------- person profile ----------
+const PEOPLE={
+ 2:{cam:'CAM 03',seen:'14:46:30',where:'Table 14, Cafeteria Hall',state:['Away from their bag','p-amb'],role:'Bag owner',col:'#0f766e'},
+ 7:{cam:'CAM 01',seen:'14:31:10',where:'Walking toward the main exit',state:['Left their bag','p-red'],role:'Bag owner',col:'#1d4ed8'},
+ 12:{cam:'CAM 03',seen:'14:47:05',where:'Moving toward Exit B with Bag #18',state:['Carrying a bag that is not theirs','p-pur'],role:'Suspected carrier',col:'#6b21a8'},
+ 4:{cam:'CAM 02',seen:'13:09:40',where:'Library Entrance',state:['Back with their bag','p-grn'],role:'Bag owner',col:'#b45309'},
+ 5:{cam:'CAM 04',seen:'11:01:30',where:'Admin Block Lobby',state:['Gave bag to a friend','p-blu'],role:'Bag owner',col:'#0e7490'},
+ 6:{cam:'CAM 04',seen:'11:02:10',where:'Admin Block Lobby, with Bag #9',state:['Authorised pickup','p-blu'],role:'Friend (authorised)',col:'#7c2d12'},
+ 9:{cam:'CAM 04',seen:'14:52:40',where:'Passing through Admin Block Lobby',state:['Passer-by, no bag','p-gry'],role:'Passer-by',col:'#334155'}
+};
+function renderPerson(){
+ const n=ui.person,p='Person #'+n,info=PEOPLE[n];
+ const linked=[...alerts,...history].filter(a=>a.owner===p||a.carrier===p);
+ if(!info&&!linked.length){$('v-person').innerHTML=`<button class="back" data-go="alerts">&larr; Back to Alerts</button><div class="card pad" style="max-width:560px"><h1>${p}</h1><p class="sub">No person with this ID has been tracked today. Try Person #2, #7 or #12.</p></div>`;return}
+ const d=info||{cam:linked[0].cam,seen:linked[0].date||linked[0].time,where:CAMS[linked[0].cam],state:['Seen in past alerts','p-gry'],role:linked[0].carrier===p?'Carrier':'Bag owner',col:'#334155'};
+ const bags=[...new Set(linked.map(a=>a.bag+(a.carrier===p?' (carried, not owner)':' (owner)')))];
+ $('v-person').innerHTML=`<button class="back" data-go="alerts">&larr; Back to Alerts</button>
+  <div class="head"><div><h1>${p} <span class="pill ${d.state[1]}" style="font-size:13px;vertical-align:middle">${d.role}</span></h1><p class="sub">Track ID <span class="mono">P-${String(n).padStart(2,'0')}</span> &middot; appearance fingerprint saved for re-identification</p></div></div>
+  <div class="two">
+   <div class="col" id="pLeft">
+    <div class="card" style="overflow:hidden"><div class="cam-h"><span class="rec"></span><b>Last seen on ${d.cam} &mdash; ${CAMS[d.cam]}</b><span class="tag mono" style="margin-left:auto">${d.seen}</span></div><div class="feed">${scene(d.cam)}</div><div class="cam-f"><span>${esc(d.where)}</span><button class="btn dark" style="margin-left:auto;min-height:38px" data-track="${d.cam}">Track in Live Monitoring</button></div></div>
+    <div class="card" id="pTable"><div class="tblbar"><h2>Alerts involving ${p}<small>${linked.length} found</small></h2></div>
+     <div style="overflow-x:auto"><table class="stack"><thead><tr><th>Alert</th><th>Type</th><th>Role</th><th>Bag</th><th>When</th><th>Status</th><th class="r">Action</th></tr></thead><tbody>${linked.map(a=>`<tr><td data-l="Alert" class="mono" style="white-space:nowrap"><b>${a.id}</b></td><td data-l="Type">${typePill(a.type)}</td><td data-l="Role">${a.carrier===p?'<span class="pill p-pur">Carrier</span>':'<span class="pill p-blu">Owner</span>'}</td><td data-l="Bag" style="white-space:nowrap">${a.bag}</td><td data-l="When" class="mono" style="white-space:nowrap">${a.date||'Today '+a.time}</td><td data-l="Status">${statPill(a.status)}</td><td data-l="Action" class="r"><button class="btn dark" style="min-height:38px" data-alert="${a.id}">View</button></td></tr>`).join('')||'<tr><td colspan="7" class="empty">No alerts involve this person. They are only being tracked.</td></tr>'}</tbody></table></div></div>
+   </div>
+   <div class="card pad"><h2>Profile</h2>
+    <div class="who-card" style="margin:14px 0"><div class="ph">${portrait(n!==12?1:0,d.col)}</div></div>
+    <div class="kv"><span>Status</span><span class="pill ${d.state[1]}">${d.state[0]}</span></div>
+    <div class="kv"><span>Last seen</span><b class="mono">${d.seen}</b></div>
+    <div class="kv"><span>Camera</span><b>${d.cam} (${CAMS[d.cam]})</b></div>
+    <div class="kv"><span>Location</span><b>${esc(d.where)}</b></div>
+    <div class="kv"><span>Linked bags</span><b>${bags.join('<br>')||'None'}</b></div>
+    <p style="color:var(--mute);font-size:13px;margin:14px 0 0">Faces are blurred. People are identified only by tracking ID and appearance, not by name.</p>
+   </div>
+  </div>`;
+ const t=$('pTable');t.style.marginTop='20px';$('v-person').appendChild(t);
+}
+
+const PER=5;
+function histList(){return history.filter(h=>(ui.hType==='all'||h.type===ui.hType)&&(ui.hRange===7||/^19|^18/.test(h.date)))}
+function renderHistory(){
+ const list=histList(),pages=Math.max(1,Math.ceil(list.length/PER));ui.hPage=Math.min(ui.hPage,pages);
+ $('histStats').innerHTML=stat('Alerts this week',history.length,icon.clock,'#f1f5f9')+stat('Average response','2 min 10 s',icon.clock,'var(--ambBg)','var(--amb)')+stat('False alarms',history.filter(h=>h.status==='False alarm').length,icon.ok,'var(--grnBg)','var(--grn)');
+ const slice=list.slice((ui.hPage-1)*PER,ui.hPage*PER);
+ const oc=s=>/False/.test(s)?'p-gry':/Confirmed/.test(s)?'p-red':/Authorised/.test(s)?'p-blu':/Collected/.test(s)?'p-amb':'p-grn';
+ $('histRows').innerHTML=slice.map(h=>`<tr><td data-l="Date & time">${h.date}</td><td data-l="Alert ID" class="mono"><b>${h.id}</b></td><td data-l="Type">${typePill(h.type)}</td><td data-l="Bag"><span class="pill p-amb" style="padding:2px 8px">${h.bag}</span></td><td data-l="Camera">${h.cam}<br><small style="color:var(--mute)">${CAMS[h.cam]}</small></td><td data-l="Outcome"><span class="pill ${oc(h.status)}">${h.status}</span></td><td data-l="Action" class="r"><button class="btn dark" style="min-height:38px" data-alert="${h.id}">View</button></td></tr>`).join('')||`<tr><td colspan="7" class="empty">No records for this filter.</td></tr>`;
+ $('pageInfo').innerHTML=`Showing <b>${slice.length}</b> of <b>${list.length}</b> records`;
+ $('pageBtns').innerHTML=Array.from({length:pages},(_,i)=>`<button class="${i+1===ui.hPage?'on':''}" data-page="${i+1}">${i+1}</button>`).join('');
+ $('prev').disabled=ui.hPage===1;$('next').disabled=ui.hPage===pages;
+ document.querySelectorAll('#hSeg button').forEach(b=>b.classList.toggle('on',b.dataset.t===ui.hType));
+}
+
+function renderSettings(){
+ $('sNear').value=S.near;$('sOwn').value=S.own;$('sAb').value=S.ab;$('sMatch').value=S.match;
+ $('tTheft').checked=S.theft;$('tStaff').checked=S.staff;$('tSound').checked=S.sound;$('tEmail').checked=S.email;
+ $('camToggles').innerHTML=Object.keys(CAMS).map(c=>`<div class="sw"><span><b>${c}</b> &middot; ${CAMS[c]}<br><small style="color:${S.cams[c]?'var(--grn)':'var(--mute)'}">&#9679; ${S.cams[c]?'Online':'Off'}</small></span><label class="tog"><input type="checkbox" data-camtog="${c}" ${S.cams[c]?'checked':''} aria-label="${c} on or off"><span></span></label></div>`).join('');
+ outs();
+}
+function outs(){$('oNear').textContent=`${(+$('sNear').value).toFixed(1)} body-heights (~${Math.round($('sNear').value*170)} cm)`;$('oOwn').textContent=`${$('sOwn').value} frames (~${(($('sOwn').value)/30).toFixed(1)} s)`;$('oAb').textContent=`${$('sAb').value} s`;$('oMatch').textContent=`${$('sMatch').value}%`}
+
+// ---------- routing ----------
+const VIEWS=['login','logged-out','dashboard','live','alerts','alert','person','history','app-settings'];
+function show(v){
+ if(v.startsWith('alert-')){ui.current=v.slice(6).toUpperCase().replace(/^A(\d)/,'A-$1').replace(/^AH/,'A-H');v='alert'}
+ if(v.startsWith('person-')){ui.person=parseInt(v.slice(7))||0;v='person'}
+ if(!VIEWS.includes(v))v='login';
+ const auth=v==='login'||v==='logged-out';
+ $('app').hidden=auth;$('v-login').hidden=v!=='login';$('v-logged-out').hidden=v!=='logged-out';
+ ['dashboard','live','alerts','alert','person','history','app-settings'].forEach(x=>$('v-'+x).hidden=x!==v);
+ const navKey=v==='alert'?(findAlert(ui.current)?.hist?'history':'alerts'):v;
+ document.querySelectorAll('.nav,.mnav button').forEach(n=>n.classList.toggle('on',n.dataset.go===navKey));
+ if(v==='logged-out'){const d=new Date();$('outTime').textContent=d.toTimeString().slice(0,5)}
+ ({dashboard:renderDashboard,live:renderLive,alerts:renderAlerts,alert:renderDetail,person:renderPerson,history:renderHistory,'app-settings':renderSettings}[v]||(()=>{}))();
+ badges();window.scrollTo(0,0);
+}
+// switch screens directly; updating the address is a bonus that may be blocked in some phone viewers
+let cur='';
+function go(v){show(v);cur=v;try{if(location.hash!=='#'+v)history.pushState(null,'','#'+v)}catch(e){}}
+window.addEventListener('popstate',()=>{const v=location.hash.slice(1)||'login';if(v!==cur){cur=v;show(v)}});
+const idHash=id=>'alert-'+id.toLowerCase().replace(/-/g,'');
+window.addEventListener('hashchange',()=>{const v=location.hash.slice(1)||'login';if(v!==cur){cur=v;show(v)}});
+
+// ---------- events ----------
+document.addEventListener('click',e=>{
+ const el=e.target.closest('[data-go],[data-alert],[data-act],[data-cam],[data-page],[data-person],[data-track],#dismiss,#clearQ');if(!el)return;
+ if(el.dataset.person){go('person-'+el.dataset.person);return}
+ if(el.dataset.track){ui.cam=el.dataset.track;ui.layout=1;go('live');return}
+ if(el.id==='dismiss'){const a=findAlert(el.dataset.id);a.status='False alarm';toast(`${a.id} marked as a false alarm`);go('alerts');return}
+ if(el.id==='clearQ'){ui.q='';$('q').value='';renderAlerts();return}
+ if(el.dataset.go){go(el.dataset.go);return}
+ if(el.dataset.alert){go(idHash(el.dataset.alert));return}
+ if(el.dataset.cam){ui.cam=el.dataset.cam;ui.layout=1;renderLive();return}
+ if(el.dataset.page){ui.hPage=+el.dataset.page;renderHistory();return}
+ if(el.dataset.act){const a=findAlert(el.dataset.id);const s=el.dataset.act;a.status=s;
+  const msg={Acknowledged:'Alert acknowledged. A guard is on the way.',Resolved:'Alert resolved: bag handled.','Confirmed theft':'Theft confirmed and reported to campus security.','Authorised pickup':'Marked as an authorised pickup (friend or staff).','False alarm':'Marked as a false alarm.',Active:'Alert reopened.'}[s];
+  toast(`${a.id}: ${msg}`);if(s==='Acknowledged'||s==='Active'){renderDetail();badges()}else go('alerts');return}
+});
+$('loginForm').addEventListener('submit',e=>{e.preventDefault();
+ // demo login: empty fields (often cleared by phone autofill) fall back to the demo account
+ if(!$('em').value.trim())$('em').value='operator01@nigehban.edu';
+ if(!$('pw').value)$('pw').value='nigehban2026';
+ const em=$('em').value.trim();
+ if(!/^\S+@\S+\.\S+$/.test(em)){$('loginErr').textContent='Enter a valid email address, e.g. operator01@nigehban.edu';$('em').focus();return}
+ $('loginErr').textContent='';go('dashboard');toast('Welcome back, Operator 01')});
+['em','pw'].forEach(i=>$(i).addEventListener('input',()=>$('loginErr').textContent=''));
+$('eye').addEventListener('click',()=>{const p=$('pw');p.type=p.type==='password'?'text':'password';$('eye').setAttribute('aria-label',p.type==='password'?'Show password':'Hide password')});
+$('forgot').addEventListener('click',()=>toast('Demo: password resets are handled by the campus IT office.'));
+$('searchForm').addEventListener('submit',e=>{e.preventDefault();const raw=$('q').value.trim(),q=raw.toLowerCase();if(!raw)return;
+ const pm=q.match(/^(?:person\s*#?\s*|p\s*#?\s*|#)(\d+)$/),bm=q.match(/^bag\s*#?\s*(\d+)$/),cm=q.match(/^cam\s*0?([1-4])$/),cn=Object.keys(CAMS).find(c=>CAMS[c].toLowerCase().includes(q)&&q.length>2);
+ if(pm){go('person-'+pm[1]);toast(`Showing Person #${pm[1]}`);return}
+ if(bm){const a=alerts.find(x=>x.bag==='Bag #'+bm[1])||history.find(x=>x.bag==='Bag #'+bm[1]);if(a){go(idHash(a.id));toast(`Bag #${bm[1]}: alert ${a.id}`);return}}
+ if(cm||cn){ui.cam=cm?'CAM 0'+cm[1]:cn;ui.layout=1;go('live');toast(`Opened ${ui.cam} live view`);return}
+ ui.q=raw;ui.type='all';ui.status='all';$('statusSel').value='all';go('alerts');renderAlerts()});
+$('typeSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;ui.type=b.dataset.t;renderAlerts()});
+$('statusSel').addEventListener('change',e=>{ui.status=e.target.value;renderAlerts()});
+$('refresh').addEventListener('click',()=>{renderAlerts();toast('Alerts refreshed. No new alerts.')});
+$('hSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;ui.hType=b.dataset.t;ui.hPage=1;renderHistory()});
+$('range').addEventListener('change',e=>{ui.hRange=+e.target.value;ui.hPage=1;renderHistory()});
+$('prev').addEventListener('click',()=>{ui.hPage--;renderHistory()});
+$('next').addEventListener('click',()=>{ui.hPage++;renderHistory()});
+$('layoutSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;ui.layout=+b.dataset.l;renderLive()});
+$('camSel').addEventListener('change',e=>{ui.cam=e.target.value;renderLive()});
+['sNear','sOwn','sAb','sMatch'].forEach(i=>$(i).addEventListener('input',outs));
+$('save').addEventListener('click',()=>{S.near=+$('sNear').value;S.own=+$('sOwn').value;S.ab=+$('sAb').value;S.match=+$('sMatch').value;S.theft=$('tTheft').checked;S.staff=$('tStaff').checked;S.sound=$('tSound').checked;S.email=$('tEmail').checked;document.querySelectorAll('[data-camtog]').forEach(c=>S.cams[c.dataset.camtog]=c.checked);renderSettings();toast(`Settings saved. Abandon time is now ${S.ab} s.`)});
+$('reset').addEventListener('click',()=>{S=JSON.parse(JSON.stringify(DEF));renderSettings();toast('Settings reset to defaults.')});
+document.addEventListener('change',e=>{if(e.target.dataset&&e.target.dataset.camtog){const c=e.target.dataset.camtog;e.target.closest('.sw').querySelector('small').innerHTML=`&#9679; ${e.target.checked?'Online (save to apply)':'Off (save to apply)'}`}});
+
+cur=location.hash.slice(1)||'login';show(cur);
+}
+</script>
+</body>
+</html>
