@@ -70,7 +70,7 @@ Enums are stored as `varchar` with check constraints (simpler migrations).
 - **Ingest validation:** the run must exist and be `running`, and the camera must match the run. The snapshot is saved first; if the DB insert fails, the file is deleted.
 - **run_launcher:** `subprocess.Popen([... "nigehban-cv", "run", "--run-id", id, "--source", src, "--video", path])` with the env passing `NIGEHBAN_WORKER_KEY`. The PID is stored. On API startup, any `running` run whose PID is dead is marked `failed`.
 - **Paths:** `video_path` must resolve inside `DATA_DIR/videos` (reject `..`). File paths are never returned to the client.
-- **Errors:** every exception is mapped to the error shape (Data-Contracts §6). Tracebacks are logged, never returned.
+- **Errors:** every exception is mapped to the error shape (Data-Contracts §6). Tracebacks are logged, never returned. Request validation errors (FastAPI's default `{"detail": [...]}` 422) are mapped to `422 VALIDATION_ERROR` with a short message per field, and the request body is **not** echoed back (Phase 4 adds the handler).
 
 ## 6. Setup and tests
 - `.env.example`: `DATABASE_URL=postgresql+psycopg://nigehban:nigehban@localhost:5432/nigehban`, `JWT_SECRET`, `WORKER_KEY`, `DATA_DIR=../../data`, `CV_CONFIG=../../services/cv/config.json`.

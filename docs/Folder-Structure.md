@@ -29,7 +29,8 @@ nigehban-campus/
 │
 ├─ packages/
 │  └─ contracts/             shared Pydantic models → docs/Data-Contracts.md
-│     ├─ nigehban_contracts/{ids,enums,events,alerts,runs,config}.py
+│     ├─ nigehban_contracts/{base,ids,enums,transitions,events,alerts,runs,common,config}.py
+│     ├─ tests/ (+ fixtures/examples.json: one example per Data-Contracts shape)
 │     └─ pyproject.toml
 │
 ├─ dataset/                  → docs/Dataset.md (metadata only in git)

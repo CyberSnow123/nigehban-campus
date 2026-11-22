@@ -24,6 +24,7 @@ Create the monorepo skeleton so every later phase has a place to land: uv worksp
 `uv sync` · `uv run pytest` · `uv run ruff check .` · `uv run nigehban-cv --version` · `docker compose up -d` + `pg_isready` · `cd apps/web && bun install && bun run lint && bun run typecheck && bun run test && bun run build` · `bun dev` serves the placeholder.
 
 ## What changed (filled at the end)
-- Files added or changed: see the branch diff. Verified from a fresh clone (uv sync, pytest, ruff, bun install, lint, typecheck, test, build) and Postgres health/volume persistence. Not exercised: `bun dev` /api proxy.
+- Files added or changed: see the branch diff. Verified from a fresh clone (uv sync, pytest, ruff, bun install, lint, typecheck, test, build) and Postgres health/volume persistence. Runtime check (Phase 2 verification): `bun dev` serves the placeholder (headless screenshot), `/api/*` reaches a server on :8000 (seen in its log) and returns 502 when nothing listens, other paths serve the SPA.
 - Decisions taken: D-12, D-13. The Vite template now ships oxlint; replaced with ESLint + Prettier per the roadmap.
+- Follow-up fixes (committed with Phase 2): `nigehban-cv` with no arguments now prints help instead of nothing.
 - Known gaps carried to a later phase: `tokens.css` and design system (Phase 5), `gen:api` script (Phase 4), `config.json` (Phase 9), `manifest.csv` (Phase 13). Host port 5432 can clash with other local Postgres containers; use `DB_PORT`.
