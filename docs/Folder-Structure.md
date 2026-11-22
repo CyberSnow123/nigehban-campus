@@ -18,7 +18,7 @@ nigehban-campus/
 │  │  ├─ package.json  vite.config.ts  tsconfig.json  eslint.config.js
 │  └─ api/                   FastAPI → docs/Backend.md
 │     ├─ app/{core,db,models,schemas,routers,services,seed}   (seed/assets: demo placeholder JPEG)
-│     ├─ alembic.ini  alembic/versions/  scripts/seed.py  tests/
+│     ├─ alembic.ini  alembic/versions/  scripts/{seed,set_user_email,export_openapi}.py  tests/
 │     └─ pyproject.toml
 │
 ├─ services/

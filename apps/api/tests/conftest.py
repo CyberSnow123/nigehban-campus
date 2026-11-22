@@ -12,15 +12,28 @@ from typing import Any
 
 import pytest
 from alembic.config import Config
+from fastapi.testclient import TestClient
 from nigehban_contracts import EventType, IdPrefix, new_id
 from sqlalchemy import Engine, create_engine, make_url, text
 from sqlalchemy.orm import Session, sessionmaker
 
-from app.core.settings import API_ROOT, get_settings
-from app.models import Alert, Camera, Run, User
+# Tests never send real email and never depend on a developer's secrets. Environment variables
+# win over .env, and this runs before the first get_settings() call.
+os.environ["MAIL_BACKEND"] = "console"
+# DATABASE_URL is deliberately NOT set here: it must come from .env, so the tests can never fall
+# back to another project's database on the default port.
+os.environ.setdefault("JWT_SECRET", "test-jwt-secret-" + "x" * 32)
+os.environ.setdefault("WORKER_KEY", "test-worker-key-" + "x" * 32)
+
+from app.core.security import hash_password  # noqa: E402
+from app.core.settings import API_ROOT, get_settings  # noqa: E402
+from app.db.session import get_db  # noqa: E402
+from app.main import create_app  # noqa: E402
+from app.models import Alert, Camera, Run, User  # noqa: E402
 
 TEST_DB_NAME = "nigehban_test"
-TABLES = ("alert_actions", "alerts", "runs", "cameras", "users")
+TABLES = ("password_reset_tokens", "alert_actions", "alerts", "runs", "cameras", "users")
+PASSWORD = "correct-horse-battery"
 
 
 def _test_url() -> str:
@@ -155,3 +168,88 @@ def make_alert(run: Run):
 @pytest.fixture
 def tmp_data_dir(tmp_path: Path) -> Path:
     return tmp_path / "data"
+
+
+# ---- HTTP client and auth helpers ------------------------------------------------------
+
+
+@pytest.fixture
+def app(engine: Engine):
+    """The real app, with its DB dependency pointed at the test database."""
+    application = create_app()
+    factory = sessionmaker(bind=engine, expire_on_commit=False)
+
+    def _get_db():
+        with factory() as session:
+            yield session
+
+    application.dependency_overrides[get_db] = _get_db
+    return application
+
+
+@pytest.fixture
+def client(app) -> TestClient:
+    # Unhandled errors must come back as 500 responses, like in production.
+    return TestClient(app, raise_server_exceptions=False)
+
+
+@pytest.fixture
+def create_user(db: Session):
+    """``create_user(username, role=..., email=...)``: a committed user with password ``PASSWORD``
+    (committed, because requests use their own DB session)."""
+
+    def _create(username: str, role: str = "operator", email: str | None = None) -> User:
+        user = User(
+            username=username,
+            display_name=username.title(),
+            email=email,
+            password_hash=hash_password(PASSWORD),
+            role=role,
+        )
+        db.add(user)
+        db.commit()
+        return user
+
+    return _create
+
+
+@pytest.fixture
+def operator(create_user) -> User:
+    return create_user("operator", email="operator@example.test")
+
+
+@pytest.fixture
+def admin(create_user) -> User:
+    return create_user("admin", role="admin", email="admin@example.test")
+
+
+def bearer(token: str) -> dict[str, str]:
+    return {"Authorization": f"Bearer {token}"}
+
+
+@pytest.fixture
+def login(client: TestClient):
+    """``login(username)`` -> Authorization header for that user."""
+
+    def _login(username: str, password: str = PASSWORD) -> dict[str, str]:
+        res = client.post("/api/auth/login", json={"username": username, "password": password})
+        assert res.status_code == 200, res.text
+        return bearer(res.json()["access_token"])
+
+    return _login
+
+
+class RecordingMailer:
+    def __init__(self) -> None:
+        self.sent: list[dict[str, str]] = []
+
+    def send(self, to: str, subject: str, body: str) -> None:
+        self.sent.append({"to": to, "subject": subject, "body": body})
+
+
+@pytest.fixture
+def mailbox(monkeypatch: pytest.MonkeyPatch) -> RecordingMailer:
+    """Captures password-reset emails instead of logging them."""
+    box = RecordingMailer()
+    monkeypatch.setattr("app.routers.auth.get_mailer", lambda settings: box)
+    return box

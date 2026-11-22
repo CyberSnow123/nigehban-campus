@@ -23,8 +23,13 @@ Database and API (from `apps/api`):
 ```bash
 uv run alembic upgrade head                      # create the tables
 uv run python scripts/seed.py                    # dev users, CAM 01-04, demo alerts (safe to rerun)
+uv run python scripts/set_user_email.py operator you@example.com   # where reset links go
 uv run uvicorn app.main:app --reload --port 8000 # then: curl localhost:8000/api/health
 ```
+
+`JWT_SECRET` and `WORKER_KEY` in `.env` must be at least 32 characters (`.env.example` has a generator one-liner).
+Password-reset email: by default the link is written to the API log (`MAIL_BACKEND=console`). For Gmail set `MAIL_BACKEND=smtp`, `SMTP_USER` and a Google **App Password** in `SMTP_PASSWORD` (2-step verification required; `.env.example` explains).
+Regenerate web types after API changes: `cd apps/web && bun run gen:api`.
 
 Dev logins `operator/operator123` and `admin/admin123` are for local use only. Seeded alerts are demo data.
 Python tests use a separate `nigehban_test` database, created automatically on the same server.

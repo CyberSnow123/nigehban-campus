@@ -25,8 +25,10 @@ Rule: routers stay thin, and the business rules (transitions, idempotency) live 
 ## 3. Endpoints
 | Method | Path | Auth | Purpose |
 |---|---|---|---|
-| POST | `/api/auth/login` | none | `{username,password}` → `{access_token, user}` |
-| GET | `/api/auth/me` | user | current user |
+| POST | `/api/auth/login` | none | `{username,password}` → `{access_token, token_type:"bearer", expires_at, user}`; wrong credentials → `401` |
+| GET | `/api/auth/me` | user | current user (`UserMe`) |
+| POST | `/api/auth/forgot-password` | none | `{email}` → always `202 {message}`; emails a reset link if the address is registered |
+| POST | `/api/auth/reset-password` | none | `{token, new_password}` → `200 {message}`; bad or used link → `422` |
 | GET | `/api/stats` | user | dashboard counters |
 | GET | `/api/alerts` | user | filters: `status` (or `open`/`closed`), `type`, `camera_id`, `run_id`, `person` (track id, matches owner or carrier), `q`, `from`, `to`, `is_demo`, `page`, `page_size`. Newest first |
 | GET | `/api/alerts/{id}` | user | alert detail |
@@ -49,16 +51,17 @@ Rule: routers stay thin, and the business rules (transitions, idempotency) live 
 | POST | `/api/ingest/events` | worker | event + snapshot → alert (idempotent) |
 | GET | `/api/health` | none | `200 {"status":"ok","database":"connected"}`, or `503 {"status":"degraded","database":"disconnected"}` when `SELECT 1` fails. No error details. API-only shape (`app/schemas/health.py`) |
 
-Auth: `Authorization: Bearer <jwt>` (12 h expiry) for users, and `X-Worker-Key` for the `ingest` routes. Logout happens on the client (token dropped).
+Auth: `Authorization: Bearer <jwt>` (12 h expiry) for users, and `X-Worker-Key` for the `ingest` routes. Logout happens on the client (token dropped); there is no server-side revocation, so a copied token stays valid until it expires (a password reset signs it out).
 
 ## 4. Database tables
 | Table | Columns |
 |---|---|
-| `users` | `id` pk, `username` unique, `display_name`, `password_hash`, `role`, `created_at` |
+| `users` | `id` pk, `username` unique (lowercase), `display_name`, `email` unique null (lowercase), `password_hash`, `password_changed_at` null, `role`, `created_at` |
 | `cameras` | `id`, `name` unique, `location`, `is_active`, `created_at` |
 | `runs` | `id`, `camera_id` fk, `source`, `video_path`, `status`, `is_demo`, `pid` null, `frames_processed`, `fps`, `message`, `started_at`, `ended_at`, `created_at` |
 | `alerts` | `id`, `ref_code` unique, `event_id` **unique**, `type`, `status`, `is_demo`, `camera_id` fk, `run_id` fk, `occurred_at`, `video_ts_s`, `bag_track_id`, `bag_class`, `bag_bbox` jsonb, `owner_track_id`, `carrier_track_id`, `separation_s`, `owner_distance_m`, `owner_away_s`, `confidence`, `owner_match`, `snapshot_path`, `acknowledged_by` fk, `acknowledged_at`, `closed_at`, `created_at` |
 | `alert_actions` | `id`, `alert_id` fk, `action`, `from_status`, `to_status`, `user_id` fk, `note`, `at` |
+| `password_reset_tokens` | `token_hash` pk (SHA-256 hex of the emailed token), `user_id` fk (cascade), `expires_at`, `used_at` null, `created_at` |
 
 Indexes: `alerts(status, occurred_at desc)`, `alerts(run_id)`, `alerts(owner_track_id)`, `alerts(carrier_track_id)`, plus foreign-key lookups `alerts(camera_id)`, `runs(camera_id)`, `alert_actions(alert_id, at)`.
 Unique: `users.username`, `cameras.name`, `alerts.ref_code`, `alerts.event_id`.
@@ -82,10 +85,14 @@ Column rules (Phase 3, enforced by named check constraints `ck_<table>_<rule>`):
 - **Ingest validation:** the run must exist and be `running`, and the camera must match the run. The snapshot is saved first; if the DB insert fails, the file is deleted.
 - **run_launcher:** `subprocess.Popen([... "nigehban-cv", "run", "--run-id", id, "--source", src, "--video", path])` with the env passing `NIGEHBAN_WORKER_KEY`. The PID is stored. On API startup, any `running` run whose PID is dead is marked `failed`.
 - **Paths:** `video_path` must resolve inside `DATA_DIR/videos` (reject `..`). File paths are never returned to the client.
-- **Errors:** every exception is mapped to the error shape (Data-Contracts §6). Tracebacks are logged, never returned. Request validation errors (FastAPI's default `{"detail": [...]}` 422) are mapped to `422 VALIDATION_ERROR` with a short message per field, and the request body is **not** echoed back (Phase 4 adds the handler).
+- **Errors:** every exception is mapped to the error shape (Data-Contracts §6) by `core/errors.py`. HTTP errors map by status (401 `UNAUTHORIZED` with `WWW-Authenticate: Bearer`, 403 `FORBIDDEN`, 404 and 405 `NOT_FOUND`). FastAPI's default `{"detail": [...]}` 422 becomes `422 VALIDATION_ERROR` with one `field: reason` per error, and the request body is **not** echoed. Anything unexpected is `500 INTERNAL_ERROR`; the traceback is logged, never returned. Services raise `ApiError(status, code, message)`. OpenAPI documents these shapes (`ERROR_RESPONSES`), so the generated web types match what the API really sends.
+- **Login and tokens:** HS256 JWT with claims `sub` (user ID), `iat`, `exp` (12 h) and **no role**: `get_current_user` loads the user from the DB on every request, so a deleted user or a changed role takes effect at once. A wrong password and an unknown username return the same `401` body, and a password check still runs for an unknown username (same response time). Usernames are matched case-insensitively.
+- **Forgot password:** `POST /api/auth/forgot-password {email}` always returns `202` with one neutral message, whether or not the email exists, and the email is sent in a background task so timing does not reveal it. The link token is `secrets.token_urlsafe(32)`, valid 30 minutes, single use; only its SHA-256 hash is stored. A new request voids older links, and at most one email per user per 60 s is sent. `POST /api/auth/reset-password {token, new_password}` needs 8-128 characters, not equal to the username; a bad, used or expired link is `422 VALIDATION_ERROR`. A successful reset sets `users.password_changed_at`, and any token issued before it is rejected (signs out every device).
+- **Mail:** `MAIL_BACKEND=console` (default) logs the message, including the reset link, so it is for dev only. `smtp` uses STARTTLS; for Gmail use `smtp.gmail.com:587`, `SMTP_USER` and a Google **App Password** (2-step verification must be on; the normal password does not work). Send failures are logged and never shown to the caller.
 
 ## 6. Setup and tests
-- `.env.example`: `DATABASE_URL=postgresql+psycopg://nigehban:nigehban@localhost:5432/nigehban`, `JWT_SECRET`, `WORKER_KEY`, `DATA_DIR=../../data`, `CV_CONFIG=../../services/cv/config.json`.
-- Settings (`app/core/settings.py`) read the repo-root `.env`; real environment variables win. Relative `DATA_DIR`/`CV_CONFIG` resolve against `apps/api`, whatever the working directory.
+- `.env.example`: `DATABASE_URL=postgresql+psycopg://nigehban:nigehban@localhost:5432/nigehban`, `JWT_SECRET` and `WORKER_KEY` (**each at least 32 characters**, left empty in the example; generate with `python -c "import secrets; print(secrets.token_urlsafe(48))"`), `DATA_DIR=../../data`, `CV_CONFIG=../../services/cv/config.json`, and the mail settings `MAIL_BACKEND`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM`, `SMTP_STARTTLS`, `WEB_BASE_URL`. Credentials live only in `.env`.
+- Settings (`app/core/settings.py`) read the repo-root `.env`; real environment variables win. Relative `DATA_DIR`/`CV_CONFIG` resolve against `apps/api`, whatever the working directory. `DATABASE_URL` must come from `.env` or the environment: tests never fall back to a default port.
+- `apps/api/scripts/set_user_email.py <username> <email>` sets the address a user receives reset links at (the seed uses placeholder `@nigehban.local` addresses). `scripts/export_openapi.py` writes the OpenAPI schema for `bun run gen:api`; a test fails if the committed `apps/web/src/lib/api/openapi.json` is stale.
 - `uv run alembic upgrade head` then `uv run python scripts/seed.py` (users `operator/operator123` and `admin/admin123` are for **dev only**). The seed is idempotent: it finds users by username, cameras by name, and demo runs/alerts by stable IDs, and never overwrites a row. It adds CAM 01-04 (prototype names), one completed `mock` run per camera, 8 demo alerts (`is_demo=true`) in several statuses with matching `alert_actions`, and copies a "DEMO DATA" placeholder JPEG to each snapshot path.
 - Tests use a separate `nigehban_test` DB (`TEST_DATABASE_URL`, or `DATABASE_URL` with the name swapped; created if missing). The schema comes from the real migration; tables are emptied after each test; DB tests skip if Postgres is down. They cover the schema, constraints, migration round trip, seed and health, and later transitions, ingest idempotency, auth guards and path checks.

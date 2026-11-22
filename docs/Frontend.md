@@ -12,14 +12,14 @@ apps/web/src/
   components/     ui primitives: Card, Button, Pill (type/status), StatTile, Modal, Table, EmptyState, DemoBadge, Snapshot
   layout/         AppShell (sidebar + topbar), MobileTabBar
   features/
-    auth/         LoginPage, LoggedOutPage, useAuth, RequireAuth
+    auth/         LoginPage, LoggedOutPage, ForgotPasswordPage, ResetPasswordPage, AuthProvider + useAuth, RequireAuth, RequireAdmin
     dashboard/    DashboardPage, CameraPreviewCard, TodayAlerts
     live/         LivePage, FeedTile (latest frame img, 1×1 / 2×2), RunControls
     alerts/       AlertsPage, AlertDetailPage, AlertCard, AlertActions, ActionTimeline
     history/      HistoryPage (filters, range, pagination)
     person/       PersonPage (alerts where track id is owner or carrier)
     settings/     SettingsPage (detection rules, theft check, cameras)
-  lib/            api/ (client.ts fetch wrapper + schema.d.ts), format.ts (times, durations), constants.ts
+  lib/            api/ (client.ts openapi-fetch wrapper, token.ts, openapi.json + schema.d.ts, generated), format.ts (times, durations), constants.ts
   styles/         tokens.css (from prototype :root), index.css
 ```
 
@@ -27,7 +27,9 @@ apps/web/src/
 | Route | Prototype view | Notes |
 |---|---|---|
 | `/login` | `v-login` | public |
-| `/logged-out` | `v-logged-out` | public |
+| `/logged-out` | `v-logged-out` | public. **Opening it ends the session** (token dropped, query cache cleared), so a Log out button only has to navigate here |
+| `/forgot-password` | (new, from the prototype's "Forgot password?") | public. Email field; always shows the server's neutral message |
+| `/reset-password?token=` | (new) | public. New password + confirm. The token is removed from the address bar on load and never stored |
 | `/` | `v-dashboard` | stat tiles, camera preview, today's alerts |
 | `/live` | `v-live` | latest frame per running run, 1×1/2×2 toggle, start/stop run |
 | `/alerts` | `v-alerts` | open alerts, status filter, search |
@@ -36,9 +38,10 @@ apps/web/src/
 | `/runs/:runId/person/:trackId` | `v-person` | track IDs are per run |
 | `/settings` | `v-app-settings` | editing is admin only, others read-only |
 
-All routes except login and logged-out sit inside `RequireAuth` and `AppShell`. On a 401 the app clears the token and redirects to `/login`.
+All routes except login and logged-out sit inside `RequireAuth` and `AppShell`. On a 401 to a request that carried a token, the app clears the token and redirects to `/login?next=<path>`; after login it returns to `next` (internal paths only). The login, forgot and reset calls never send a token, and their 401/422 are shown on the form.
 
 ## 4. Data and polling
+- **Token storage:** always in memory; the login checkbox "Remember this terminal session" also keeps it in `localStorage` (checked) or `sessionStorage` (unchecked). A stored token is verified with `GET /api/auth/me` before the app trusts it. Types come from `bun run gen:api` (`schema.d.ts` and `openapi.json` are committed, never hand-edited).
 - Query keys: `['alerts', filters]`, `['alert', id]`, `['stats']`, `['runs']`, `['run', id]`.
 - `refetchInterval: 3000` on stats, open alerts, alert detail and running runs (D-09). Pause when the tab is hidden. Stop polling a run once it's `completed|stopped|failed`.
 - Live frame: `<img src="/api/runs/{id}/frame?t={tick}">` refreshed every 1 s, sent with the auth token (fetched as a blob).

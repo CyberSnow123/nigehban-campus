@@ -1,0 +1,48 @@
+/* Design tokens from prototype/dashboard.html :root (Phase 5 extends this file). */
+:root {
+  color-scheme: light;
+  --bg: #f6f8fb;
+  --card: #fff;
+  --line: #e5e9f0;
+  --ink: #0f172a;
+  --mute: #64748b;
+  --navy: #0f172a;
+  --red: #e11d48;
+  --redBg: #fff1f3;
+  --pur: #9333ea;
+  --purBg: #f6efff;
+  --amb: #d97706;
+  --ambBg: #fff7e6;
+  --grn: #059669;
+  --grnBg: #ecfdf5;
+  --blu: #2563eb;
+  --bluBg: #eff4ff;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-card: var(--card);
+  --color-line: var(--line);
+  --color-ink: var(--ink);
+  --color-mute: var(--mute);
+  --color-navy: var(--navy);
+  --color-danger: var(--red);
+  --color-danger-bg: var(--redBg);
+  --color-ok: var(--grn);
+  --color-ok-bg: var(--grnBg);
+  --font-sans: Inter, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 15px/1.5 var(--font-sans);
+  overflow-x: clip;
+}
+
+:focus-visible {
+  outline: 2px solid var(--blu);
+  outline-offset: 2px;
+}

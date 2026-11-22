@@ -1,3 +1,4 @@
 dist
 bun.lock
 src/lib/api/schema.d.ts
+src/lib/api/openapi.json
