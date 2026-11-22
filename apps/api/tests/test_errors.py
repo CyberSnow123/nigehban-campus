@@ -56,3 +56,13 @@ def test_query_validation_error_names_the_field_only(app: FastAPI, client: TestC
 
 def test_health_still_works_with_handlers(client: TestClient):
     assert client.get("/api/health").status_code == 200
+
+
+def test_broken_json_names_the_body_not_an_offset(client):
+    res = client.post(
+        "/api/auth/login",
+        content=b'{"username": "a", "password": ',  # cut off mid-document
+        headers={"Content-Type": "application/json"},
+    )
+    assert res.status_code == 422
+    assert res.json()["error"]["message"].startswith("body: ")

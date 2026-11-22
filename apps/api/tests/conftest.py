@@ -255,3 +255,93 @@ def mailbox(monkeypatch: pytest.MonkeyPatch) -> RecordingMailer:
     box = RecordingMailer()
     monkeypatch.setattr("app.routers.auth.get_mailer", lambda settings: box)
     return box
+
+
+# ---- ingest (Phase 6) ------------------------------------------------------------------
+
+JPEG = (API_ROOT / "app" / "seed" / "assets" / "placeholder_snapshot.jpg").read_bytes()
+
+
+@pytest.fixture
+def worker_headers() -> dict[str, str]:
+    return {"X-Worker-Key": get_settings().worker_key.get_secret_value()}
+
+
+@pytest.fixture
+def storage_dir(app, tmp_path: Path) -> Path:
+    """Points the app's file storage at a temp ``DATA_DIR`` for this test."""
+    from app.services.storage import Storage, get_storage
+
+    root = tmp_path / "data"
+    app.dependency_overrides[get_storage] = lambda: Storage(root)
+    return root
+
+
+@pytest.fixture
+def live_camera(db: Session) -> Camera:
+    cam = Camera(name="CAM 01", location="Main Library")
+    db.add(cam)
+    db.commit()
+    return cam
+
+
+@pytest.fixture
+def make_run(db: Session, live_camera: Camera):
+    """``make_run(source="mock", status="running")``: a committed run on ``live_camera``."""
+
+    def _make(source: str = "mock", status: str = "running") -> Run:
+        run = Run(
+            camera_id=live_camera.id,
+            source=source,
+            is_demo=source == "mock",
+            video_path="office_01.mp4",
+            status=status,
+            started_at=datetime.now(UTC),
+        )
+        db.add(run)
+        db.commit()
+        return run
+
+    return _make
+
+
+def event_payload(run: Run, event_type: str = "abandoned_bag", **overrides: Any) -> dict:
+    """A valid DetectionEvent for ``run`` (Data-Contracts §3)."""
+    theft = event_type == "possible_theft"
+    payload: dict[str, Any] = {
+        "schema_version": 1,
+        "event_id": new_id(IdPrefix.EVENT),
+        "type": event_type,
+        "run_id": run.id,
+        "camera_id": run.camera_id,
+        "source": run.source,
+        "occurred_at": "2026-11-22T14:47:05Z",
+        "video_ts_s": 125.4,
+        "bag": {"track_id": 18, "class": "handbag", "bbox": [812, 440, 905, 560]},
+        "owner_track_id": 2,
+        "carrier_track_id": 12 if theft else None,
+        "separation_s": None if theft else 65.0,
+        "owner_distance_m": 3.1,
+        "owner_away_s": 35.0 if theft else None,
+        "confidence": 0.94,
+        "owner_match": 0.18 if theft else None,
+    }
+    payload.update(overrides)
+    return payload
+
+
+@pytest.fixture
+def post_event(client: TestClient, worker_headers):
+    """``post_event(payload, snapshot=JPEG)`` -> response of ``POST /api/ingest/events``."""
+    import json
+
+    def _post(payload: dict, snapshot: bytes | None = JPEG, headers: dict | None = None):
+        files = {"snapshot": ("s.jpg", snapshot, "image/jpeg")} if snapshot is not None else None
+        return client.post(
+            "/api/ingest/events",
+            data={"event": json.dumps(payload)},
+            files=files,
+            headers=worker_headers if headers is None else headers,
+        )
+
+    return _post

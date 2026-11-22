@@ -39,6 +39,7 @@ More setup notes:
 - Password reset email: by default the link is written to the API log (`MAIL_BACKEND=console`). To receive it, run `cd apps/api && uv run python scripts/set_user_email.py operator you@example.com`. For Gmail set `MAIL_BACKEND=smtp`, `SMTP_USER` and a Google **App Password** in `SMTP_PASSWORD` (2-step verification required; `.env.example` explains).
 - Regenerate web types after API changes: `cd apps/web && bun run gen:api`.
 - Python tests use a separate `nigehban_test` database, created automatically on the same server.
+- Post a fake detection event through the ingest API (API running, seeded cameras): `cd apps/api && uv run python scripts/post_fake_event.py --camera "CAM 01" --type possible_theft --finish`. It is sent as `source: mock`, so the alert is demo data.
 
 Dev logins are for local use only. Seeded alerts are demo data.
 

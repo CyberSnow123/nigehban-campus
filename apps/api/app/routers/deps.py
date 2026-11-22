@@ -1,14 +1,16 @@
-"""Shared route dependencies: who is calling, and are they an admin."""
+"""Shared route dependencies: who is calling (a user or the CV worker), and are they an admin."""
 
+import hmac
 from typing import Annotated
 
 from fastapi import Depends
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from fastapi.security import APIKeyHeader, HTTPAuthorizationCredentials, HTTPBearer
 from nigehban_contracts import UserRole
 from sqlalchemy.orm import Session
 
-from app.core.errors import forbidden, unauthorized
+from app.core.errors import forbidden, unauthorized, worker_unauthorized
 from app.core.security import decode_access_token
+from app.core.settings import Settings, get_settings
 from app.db.session import get_db
 from app.models import User
 
@@ -45,3 +47,16 @@ def require_admin(user: CurrentUser) -> User:
 
 
 AdminUser = Annotated[User, Depends(require_admin)]
+
+
+_worker_key = APIKeyHeader(name="X-Worker-Key", auto_error=False)
+
+
+def require_worker(
+    key: Annotated[str | None, Depends(_worker_key)],
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> None:
+    """The CV worker's shared key (D-11). Compared in constant time."""
+    expected = settings.worker_key.get_secret_value().encode()
+    if key is None or not hmac.compare_digest(key.encode(), expected):
+        raise worker_unauthorized()

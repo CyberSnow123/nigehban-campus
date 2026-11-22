@@ -72,8 +72,21 @@ Sent as `multipart/form-data` to `POST /api/ingest/events` with the fields `even
 Response `201 {"alert_id": "alt_…", "duplicate": false}`. A resent `event_id` returns `200` with `duplicate: true` and creates nothing.
 
 ## 4. Run telemetry (cv → api)
-- `POST /api/ingest/runs/{run_id}/status`: `{"status": "running", "frames_processed": 3120, "fps": 14.2, "message": null}`. A worker may post `running`, `completed`, `stopped` or `failed` only (never `queued`). `frames_processed >= 0`, `fps >= 0`.
-- `POST /api/ingest/runs/{run_id}/frame`: multipart `frame` (JPEG, latest annotated frame, at most 1 per second). It overwrites the previous frame.
+All ingest routes need the `X-Worker-Key` header. A missing or wrong key is `401 UNAUTHORIZED`.
+
+- `POST /api/ingest/runs` (**IngestRunCreate**, used by the standalone CLI): `{"camera": "CAM 01", "source": "mock", "video_path": "office_01.mp4"}`. `camera` is the camera **name** (names are unique). `video_path` is relative to `DATA_DIR/videos`: no `..`, no leading `/` or `\`, no drive letter, at most 255 characters, stored with `/`. Its existence is not checked here. Response `201 Run`, created as `running` with `started_at` set, `is_demo = (source == "mock")`. An unknown camera is `404 NOT_FOUND`, an inactive one `422 VALIDATION_ERROR`.
+- `POST /api/ingest/runs/{run_id}/status`: `{"status": "running", "frames_processed": 3120, "fps": 14.2, "message": null}`. A worker may post `running`, `completed`, `stopped` or `failed` only (never `queued`). `frames_processed >= 0`, `fps >= 0`; both are totals and overwrite the stored values. Response `200 Run`.
+- `POST /api/ingest/runs/{run_id}/frame`: multipart `frame` (JPEG, at most 2 MB, latest annotated frame, at most 1 per second). It overwrites the previous frame. Response `204`.
+
+**Run status moves** (`RUN_TRANSITIONS`, checked with `can_update_run`):
+```
+queued  ──▶ running | stopped | failed
+running ──▶ running (heartbeat) | completed | stopped | failed
+completed, stopped, failed: terminal
+```
+A status post, frame or event for a run that cannot take it is `409 RUN_NOT_RUNNING` (events and frames need `running`). The first `running` sets `started_at` if it is empty; a terminal status sets `ended_at`. An unknown run is `404 NOT_FOUND`.
+
+**Event checks** (`POST /api/ingest/events`), in this order: the `event` field parses as a `DetectionEvent` (else `422`); a known `event_id` returns `200 {duplicate: true}` with the first alert's ID, whatever the run's state now; the run exists (`404`) and is `running` (`409`); `camera_id` and `source` equal the run's (`422`); the `snapshot` is a JPEG (starts `FF D8 FF`) of at most 2 MB (`422`).
 
 ## 5. API read models (api → web)
 **Alert**
@@ -108,7 +121,7 @@ Response `201 {"alert_id": "alt_…", "duplicate": false}`. A resent `event_id` 
 ## 6. Common API shapes
 - **Page:** `{ "items": [...], "total": 42, "page": 1, "page_size": 20 }`
 - **Error:** `{ "error": { "code": "INVALID_TRANSITION", "message": "Human-readable text." } }`. No stack traces and no file paths.
-- **Error codes:** `UNAUTHORIZED`, `FORBIDDEN`, `NOT_FOUND`, `VALIDATION_ERROR`, `INVALID_TRANSITION`, `DUPLICATE_EVENT`, `RUN_NOT_RUNNING`, `RATE_LIMITED` (HTTP 429, with a `Retry-After` header in seconds; sent by `POST /api/auth/login` when one client address makes too many attempts), `INTERNAL_ERROR`.
+- **Error codes:** `UNAUTHORIZED`, `FORBIDDEN`, `NOT_FOUND`, `VALIDATION_ERROR`, `INVALID_TRANSITION`, `DUPLICATE_EVENT` (reserved: a resent event is answered `200 {duplicate: true}`, not an error), `RUN_NOT_RUNNING` (HTTP 409, ingest to a run that cannot take it, §4), `RATE_LIMITED` (HTTP 429, with a `Retry-After` header in seconds; sent by `POST /api/auth/login` when one client address makes too many attempts), `INTERNAL_ERROR`.
 - **Close request:** `{ "outcome": "false_alarm", "note": "Owner returned" }`. `outcome` is one of the four closed statuses (`resolved`, `false_alarm`, `authorised_pickup`, `confirmed_theft`). `note` is optional, at most 500 characters. Whether an outcome is allowed for the alert's type is decided by the transition table (§2), not by this model.
 
 ## 7. `config.json` (cv worker)
