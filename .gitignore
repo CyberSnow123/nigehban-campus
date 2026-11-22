@@ -33,3 +33,5 @@ pgdata/
 .DS_Store
 graphify-out/
 /prompt.md
+.coverage
+htmlcov/

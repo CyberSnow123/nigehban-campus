@@ -3,7 +3,7 @@ name = "nigehban-contracts"
 version = "0.1.0"
 description = "Shared Pydantic contracts for Nigehban Campus"
 requires-python = ">=3.11"
-dependencies = ["pydantic>=2"]
+dependencies = ["pydantic>=2", "python-ulid>=3"]
 
 [build-system]
 requires = ["hatchling"]
