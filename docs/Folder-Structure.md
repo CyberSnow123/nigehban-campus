@@ -17,8 +17,8 @@ nigehban-campus/
 │  │  ├─ src/{app,components,layout,features,lib,styles}   (tokens.css arrives in Phase 5)
 │  │  ├─ package.json  vite.config.ts  tsconfig.json  eslint.config.js
 │  └─ api/                   FastAPI → docs/Backend.md
-│     ├─ app/{core,db,models,schemas,routers,services}
-│     ├─ alembic/  scripts/seed.py  tests/
+│     ├─ app/{core,db,models,schemas,routers,services,seed}   (seed/assets: demo placeholder JPEG)
+│     ├─ alembic.ini  alembic/versions/  scripts/seed.py  tests/
 │     └─ pyproject.toml
 │
 ├─ services/
