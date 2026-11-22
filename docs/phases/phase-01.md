@@ -1,5 +1,5 @@
 # Phase 01: Repo foundation and tooling
-Branch: `feature/phase-01-foundation` · Status: in progress · Owner: Farooq khan
+Branch: `feature/phase-01-foundation` · Status: done · Owner: Farooq khan
 
 ## Goal
 Create the monorepo skeleton so every later phase has a place to land: uv workspace, Vite React app, PostgreSQL in Docker, git-ignored `data/`, README quick start.
@@ -24,6 +24,6 @@ Create the monorepo skeleton so every later phase has a place to land: uv worksp
 `uv sync` · `uv run pytest` · `uv run ruff check .` · `uv run nigehban-cv --version` · `docker compose up -d` + `pg_isready` · `cd apps/web && bun install && bun run lint && bun run typecheck && bun run test && bun run build` · `bun dev` serves the placeholder.
 
 ## What changed (filled at the end)
-- Files added or changed: see the branch diff.
+- Files added or changed: see the branch diff. Verified from a fresh clone (uv sync, pytest, ruff, bun install, lint, typecheck, test, build) and Postgres health/volume persistence. Not exercised: `bun dev` /api proxy.
 - Decisions taken: D-12, D-13. The Vite template now ships oxlint; replaced with ESLint + Prettier per the roadmap.
 - Known gaps carried to a later phase: `tokens.css` and design system (Phase 5), `gen:api` script (Phase 4), `config.json` (Phase 9), `manifest.csv` (Phase 13). Host port 5432 can clash with other local Postgres containers; use `DB_PORT`.
