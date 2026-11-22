@@ -2,21 +2,30 @@
 
 from typing import Annotated, Literal, Self
 
-from pydantic import AfterValidator, Field, model_validator
+from pydantic import AfterValidator, Field, StrictBool, field_validator, model_validator
 
-from nigehban_contracts.base import ContractModel, NonNegFloat, NonNegInt, Unit, UtcDatetime
+from nigehban_contracts.base import (
+    ContractModel,
+    FiniteFloat,
+    NonNegFloat,
+    NonNegInt,
+    Unit,
+    UtcDatetime,
+)
 from nigehban_contracts.enums import BagClass, EventSource, EventType
 from nigehban_contracts.ids import AlertId, CameraId, EventId, RunId
 
+_Box = tuple[FiniteFloat, FiniteFloat, FiniteFloat, FiniteFloat]
 
-def _check_bbox(box: tuple[float, float, float, float]) -> tuple[float, float, float, float]:
+
+def _check_bbox(box: _Box) -> _Box:
     x1, y1, x2, y2 = box
     if x1 < 0 or y1 < 0 or x2 <= x1 or y2 <= y1:
         raise ValueError("bbox must satisfy 0 <= x1 < x2 and 0 <= y1 < y2")
     return box
 
 
-BBox = Annotated[tuple[float, float, float, float], AfterValidator(_check_bbox)]
+BBox = Annotated[_Box, AfterValidator(_check_bbox)]
 
 
 class BagInfo(ContractModel):
@@ -46,6 +55,13 @@ class DetectionEvent(ContractModel):
     confidence: Unit
     owner_match: Unit | None = None
 
+    @field_validator("schema_version", mode="before")
+    @classmethod
+    def _no_bool_version(cls, value: object) -> object:
+        if isinstance(value, bool):  # True == 1 in Python, so reject it explicitly
+            raise ValueError("schema_version must be the integer 1")
+        return value
+
     @model_validator(mode="after")
     def _check_type_conditional_fields(self) -> Self:
         if self.type is EventType.ABANDONED_BAG:
@@ -65,4 +81,4 @@ class DetectionEvent(ContractModel):
 
 class IngestEventResponse(ContractModel):
     alert_id: AlertId
-    duplicate: bool
+    duplicate: StrictBool

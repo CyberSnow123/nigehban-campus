@@ -17,7 +17,7 @@
 - **Boxes:** `bbox = [x1, y1, x2, y2]` in pixels of the source frame, with `x1 >= 0`, `y1 >= 0`, `x2 > x1`, `y2 > y1`.
 - **Track IDs:** ByteTrack integers. They are unique **within one run only**. "Person #12" in the UI means `track_id 12` in that run.
 - **Versioning:** every event carries `schema_version` (currently `1`).
-- **Validation:** every contract model rejects unknown keys. Timestamps must be timezone-aware and are normalised to UTC. `video_ts_s >= 0`.
+- **Validation:** every contract model rejects unknown keys. Timestamps must be timezone-aware and are normalised to UTC. `video_ts_s >= 0`. Numbers and flags are strict: no booleans as numbers, no numeric strings, no `NaN` or infinity (JSON integers are fine where a float is expected).
 - **Python naming:** `bag.class` is `class_` in Python (alias `class`). JSON and OpenAPI always say `class`.
 
 ## 2. Enums

@@ -23,9 +23,9 @@ Implement [Data-Contracts.md](../Data-Contracts.md) as Pydantic v2 models in `pa
 1. **Doc first.** Update `docs/Data-Contracts.md` with decisions 1-9 (short notes under §1, §3, §4, §5, §6). Then code.
 2. **Dependency.** Add `python-ulid` to `packages/contracts/pyproject.toml`; `uv sync`.
 3. **Files in `packages/contracts/nigehban_contracts/`** (each small and single-purpose):
-   - `base.py`: `ContractModel` (`extra="forbid"`, `populate_by_name=True`) and shared `Confidence`, `NonNegFloat` annotated types.
+   - `base.py`: `ContractModel` (`extra="forbid"`, `populate_by_name=True`) and shared strict number types `Unit` (0-1), `FiniteFloat`, `NonNegFloat`, `PositiveFloat`, `NonNegInt`, `PositiveInt`, plus `UtcDatetime`.
    - `ids.py`: `IdPrefix` enum, `new_id(prefix)`, `validate_id(value, prefix)`, typed aliases `EventId`, `AlertId`, `ActionId`, `RunId`, `CameraId`, `UserId`; `format_ref_code(year, seq, type)` and a `RefCode` pattern type (`SEC-YYYY-NNN-A|T`).
-   - `enums.py`: `StrEnum`s `EventType`, `BagClass`, `EventSource`, `AlertStatus`, `RunStatus`, `UserRole`, `ErrorCode`, plus `OPEN_STATUSES`, `CLOSED_STATUSES`.
+   - `enums.py`: `StrEnum`s `EventType`, `BagClass`, `EventSource`, `AlertStatus`, `RunStatus`, `UserRole`, `ActionType`, `ErrorCode`, plus `OPEN_STATUSES`, `CLOSED_STATUSES`, `WORKER_RUN_STATUSES`.
    - `transitions.py`: `ALLOWED_TRANSITIONS` and `can_transition(type, from_status, to_status)`, `allowed_outcomes(type)`.
    - `events.py`: `BBox`, `BagInfo`, `DetectionEvent` (model validator for type-conditional rules), `IngestEventResponse`.
    - `runs.py`: `RunStatusUpdate`, `Run`, `Camera`.
@@ -56,14 +56,17 @@ cd apps/web && bun run lint && bun run typecheck && bun run test   # unchanged, 
 Manual: `uv run python -c "from nigehban_contracts import *; print(new_id('alt'))"` prints a valid ID.
 
 ## Acceptance
-- [ ] Every JSON example in Data-Contracts.md has a fixture and a passing test.
-- [ ] Bad prefixes, theft-only fields on abandoned events, bad transitions and unknown config keys are rejected.
-- [ ] `uv run pytest packages/contracts` green, coverage >= 95%.
-- [ ] No imports from `apps/` or `services/` inside contracts; only `pydantic` and `python-ulid`.
-- [ ] Data-Contracts.md and the code agree (same field names, same rules).
+- [x] Every JSON example in Data-Contracts.md has a fixture and a passing test.
+- [x] Bad prefixes, theft-only fields on abandoned events, bad transitions and unknown config keys are rejected.
+- [x] `uv run pytest packages/contracts` green, coverage >= 95%.
+- [x] No imports from `apps/` or `services/` inside contracts; only `pydantic` and `python-ulid`.
+- [x] Data-Contracts.md and the code agree (same field names, same rules).
 
 ## What changed (filled at the end)
 - Files added or changed: `packages/contracts/nigehban_contracts/{base,ids,enums,transitions,events,alerts,runs,common,config}.py` and `__init__.py`; `packages/contracts/tests/*` with `fixtures/examples.json`; `python-ulid` dependency; `Data-Contracts.md` clarifications; `Folder-Structure.md`.
-- Results: 240 contract tests pass, coverage 100%; whole repo 242 tests; ruff clean; web checks unchanged.
+- Results: 267 contract tests pass, coverage 100%; whole repo 270 tests; ruff clean; web checks unchanged.
+- Runtime verification (`/verify`, see `.claude/skills/verify`): contracts driven through the public import, a scratch FastAPI app (OpenAPI keeps `class`, `Page_Alert_`, fixed 4-item bbox; 201 on a valid event, 422 on a theft field in an abandoned event).
+- Fixes from verification: numbers and flags made strict (bools, numeric strings, NaN and infinity rejected; `schema_version: true` rejected), covered by `tests/test_strictness.py`. Documented in Data-Contracts §1.
+- Note: ULIDs created in the same millisecond differ only in their last characters (monotonic ULIDs). Valid and unique; expected.
 - Decisions taken: the 11 in the table above. Extra: `Alert.acknowledged_by` is `{id, display_name}` or null (documented). `ActionType` enum added for `AlertAction.action`. Theft events require carrier, owner_away_s and owner_match (kept). ID format not added to Decisions.md (already in Data-Contracts).
-- Known gaps carried to a later phase: settings-subset model (Phase 12), ingest-run body (Phase 6), TS type generation (Phase 4).
+- Known gaps carried to a later phase: settings-subset model (Phase 12), ingest-run body (Phase 6), TS type generation (Phase 4), and the 422 error handler mapping FastAPI's `{"detail": [...]}` to `VALIDATION_ERROR` without echoing input (Phase 4, written into Backend.md §5).

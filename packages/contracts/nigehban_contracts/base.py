@@ -19,8 +19,15 @@ def _to_utc(value: datetime) -> datetime:
 UtcDatetime = Annotated[AwareDatetime, AfterValidator(_to_utc)]
 """Timezone-aware datetime, normalised to UTC."""
 
-Unit = Annotated[float, Field(ge=0, le=1)]
+# Numbers are strict: no bools, no numeric strings, no NaN or infinity. JSON ints are
+# still accepted where a float is expected.
+_STRICT_FLOAT = {"strict": True, "allow_inf_nan": False}
+
+FiniteFloat = Annotated[float, Field(**_STRICT_FLOAT)]
+Unit = Annotated[float, Field(ge=0, le=1, **_STRICT_FLOAT)]
 """A value between 0 and 1 (confidence, similarity)."""
 
-NonNegFloat = Annotated[float, Field(ge=0)]
-NonNegInt = Annotated[int, Field(ge=0)]
+NonNegFloat = Annotated[float, Field(ge=0, **_STRICT_FLOAT)]
+PositiveFloat = Annotated[float, Field(gt=0, **_STRICT_FLOAT)]
+NonNegInt = Annotated[int, Field(ge=0, strict=True)]
+PositiveInt = Annotated[int, Field(ge=1, strict=True)]

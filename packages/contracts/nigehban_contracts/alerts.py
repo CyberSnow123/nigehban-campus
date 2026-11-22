@@ -1,6 +1,6 @@
 """Alert read models and the close request (Data-Contracts.md §5 and §6)."""
 
-from pydantic import Field, field_validator
+from pydantic import Field, StrictBool, field_validator
 
 from nigehban_contracts.base import ContractModel, NonNegFloat, NonNegInt, Unit, UtcDatetime
 from nigehban_contracts.common import UserRef
@@ -20,7 +20,7 @@ class Alert(ContractModel):
     ref_code: RefCode
     type: EventType
     status: AlertStatus
-    is_demo: bool
+    is_demo: StrictBool
     camera: CameraRef
     run_id: RunId
     event_id: EventId

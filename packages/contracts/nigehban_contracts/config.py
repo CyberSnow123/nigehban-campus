@@ -1,10 +1,10 @@
 """CvConfig: the shape of services/cv/config.json (Data-Contracts.md §7)."""
 
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import Field
 
-from nigehban_contracts.base import ContractModel, Unit
+from nigehban_contracts.base import ContractModel, PositiveFloat, PositiveInt, Unit
 
 DEVICE_PATTERN = r"^(auto|cpu|mps|cuda(:\d+)?)$"
 
@@ -12,40 +12,40 @@ DEVICE_PATTERN = r"^(auto|cpu|mps|cuda(:\d+)?)$"
 class DetectorConfig(ContractModel):
     weights: str = Field(default="yolo26n.pt", min_length=1)
     conf: Unit = 0.35
-    imgsz: int = Field(default=960, ge=32)
+    imgsz: Annotated[int, Field(ge=32, strict=True)] = 960
     device: str = Field(default="auto", pattern=DEVICE_PATTERN)
 
 
 class TrackerConfig(ContractModel):
     type: Literal["bytetrack"] = "bytetrack"
-    track_buffer: int = Field(default=60, ge=1)
+    track_buffer: PositiveInt = 60
 
 
 class AssociationConfig(ContractModel):
-    near_ratio: float = Field(default=1.0, gt=0)
-    min_frames: int = Field(default=30, ge=1)
+    near_ratio: PositiveFloat = 1.0
+    min_frames: PositiveInt = 30
 
 
 class AbandonConfig(ContractModel):
-    away_ratio: float = Field(default=2.5, gt=0)
-    threshold_s: float = Field(default=60, gt=0)
+    away_ratio: PositiveFloat = 2.5
+    threshold_s: PositiveFloat = 60
 
 
 class TheftConfig(ContractModel):
-    min_displacement_ratio: float = Field(default=1.5, gt=0)
-    min_frames: int = Field(default=15, ge=1)
+    min_displacement_ratio: PositiveFloat = 1.5
+    min_frames: PositiveInt = 15
     owner_match_threshold: Unit = 0.6
 
 
 class OutputConfig(ContractModel):
-    annotated_video: bool = True
-    events_csv: bool = True
-    frame_push_interval_s: float = Field(default=1.0, gt=0)
+    annotated_video: bool = Field(default=True, strict=True)
+    events_csv: bool = Field(default=True, strict=True)
+    frame_push_interval_s: PositiveFloat = 1.0
 
 
 class ApiConfig(ContractModel):
-    base_url: str = "http://localhost:8000"
-    api_key_env: str = "NIGEHBAN_WORKER_KEY"
+    base_url: str = Field(default="http://localhost:8000", min_length=1)
+    api_key_env: str = Field(default="NIGEHBAN_WORKER_KEY", min_length=1)
 
 
 class CvConfig(ContractModel):

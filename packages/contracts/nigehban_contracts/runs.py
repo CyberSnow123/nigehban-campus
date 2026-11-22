@@ -1,6 +1,6 @@
 """Runs, cameras and worker telemetry (Data-Contracts.md §4 and §5)."""
 
-from pydantic import field_validator
+from pydantic import StrictBool, field_validator
 
 from nigehban_contracts.base import ContractModel, NonNegFloat, NonNegInt, UtcDatetime
 from nigehban_contracts.enums import WORKER_RUN_STATUSES, EventSource, RunStatus
@@ -29,7 +29,7 @@ class Run(ContractModel):
     source: EventSource
     video_path: str
     status: RunStatus
-    is_demo: bool
+    is_demo: StrictBool
     frames_processed: NonNegInt
     fps: NonNegFloat | None = None
     started_at: UtcDatetime | None = None
@@ -41,4 +41,4 @@ class Camera(ContractModel):
     id: CameraId
     name: str
     location: str
-    is_active: bool
+    is_active: StrictBool
