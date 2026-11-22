@@ -8,7 +8,11 @@ from app.core.settings import API_ROOT, Settings
 from app.db.session import get_engine, make_engine
 from app.main import create_app
 
-REQUIRED = {"database_url": "postgresql+psycopg://u:p@h/d", "jwt_secret": "j", "worker_key": "w"}
+REQUIRED = {
+    "database_url": "postgresql+psycopg://u:p@h/d",
+    "jwt_secret": "j" * 32,
+    "worker_key": "w" * 32,
+}
 
 
 def _client(engine: Engine) -> TestClient:
@@ -49,7 +53,7 @@ def test_absolute_paths_kept(tmp_path: Path):
 
 def test_secrets_hidden_in_repr():
     s = Settings(_env_file=None, **REQUIRED)
-    assert "j" != str(s.jwt_secret) and s.jwt_secret.get_secret_value() == "j"
+    assert str(s.jwt_secret) != "j" * 32 and s.jwt_secret.get_secret_value() == "j" * 32
     assert "worker_key=SecretStr('**********')" in repr(s)
 
 

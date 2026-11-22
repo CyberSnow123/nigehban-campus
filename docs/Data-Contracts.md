@@ -108,7 +108,7 @@ Response `201 {"alert_id": "alt_…", "duplicate": false}`. A resent `event_id` 
 ## 6. Common API shapes
 - **Page:** `{ "items": [...], "total": 42, "page": 1, "page_size": 20 }`
 - **Error:** `{ "error": { "code": "INVALID_TRANSITION", "message": "Human-readable text." } }`. No stack traces and no file paths.
-- **Error codes:** `UNAUTHORIZED`, `FORBIDDEN`, `NOT_FOUND`, `VALIDATION_ERROR`, `INVALID_TRANSITION`, `DUPLICATE_EVENT`, `RUN_NOT_RUNNING`, `INTERNAL_ERROR`.
+- **Error codes:** `UNAUTHORIZED`, `FORBIDDEN`, `NOT_FOUND`, `VALIDATION_ERROR`, `INVALID_TRANSITION`, `DUPLICATE_EVENT`, `RUN_NOT_RUNNING`, `RATE_LIMITED` (HTTP 429, with a `Retry-After` header in seconds; sent by `POST /api/auth/login` when one client address makes too many attempts), `INTERNAL_ERROR`.
 - **Close request:** `{ "outcome": "false_alarm", "note": "Owner returned" }`. `outcome` is one of the four closed statuses (`resolved`, `false_alarm`, `authorised_pickup`, `confirmed_theft`). `note` is optional, at most 500 characters. Whether an outcome is allowed for the alert's type is decided by the transition table (§2), not by this model.
 
 ## 7. `config.json` (cv worker)

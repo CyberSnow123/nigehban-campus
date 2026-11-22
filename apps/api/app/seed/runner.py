@@ -52,6 +52,7 @@ def _seed_users(session: Session, created: Counter[str]) -> dict[str, User]:
         if user is None:
             user = User(
                 username=spec.username,
+                email=spec.email,
                 display_name=spec.display_name,
                 password_hash=hash_password(spec.password),
                 role=spec.role.value,

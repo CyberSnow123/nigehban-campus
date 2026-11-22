@@ -1,7 +1,14 @@
+import { useState } from 'react'
+import { RouterProvider, createBrowserRouter } from 'react-router-dom'
+
+import { Providers } from './providers'
+import { routes } from './router'
+
 export default function App() {
+  const [router] = useState(() => createBrowserRouter(routes))
   return (
-    <main className="flex min-h-screen items-center justify-center">
-      <h1 className="text-2xl font-semibold">Nigehban Campus: foundation ready</h1>
-    </main>
+    <Providers>
+      <RouterProvider router={router} />
+    </Providers>
   )
 }

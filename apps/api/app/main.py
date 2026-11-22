@@ -4,8 +4,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app import __version__
+from app.core.errors import register_error_handlers
+from app.core.rate_limit import limiter
 from app.core.settings import get_settings
-from app.routers import health
+from app.routers import auth, health
 
 
 def create_app() -> FastAPI:
@@ -17,7 +19,10 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    app.state.limiter = limiter  # slowapi looks it up here
+    register_error_handlers(app)
     app.include_router(health.router)
+    app.include_router(auth.router)
     return app
 
 

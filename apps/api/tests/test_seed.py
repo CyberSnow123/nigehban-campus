@@ -56,6 +56,8 @@ def test_users_and_cameras(db: Session, tmp_data_dir: Path):
     seed(db, tmp_data_dir)
     users = {u.username: u for u in db.scalars(select(User))}
     assert users["operator"].role == "operator" and users["admin"].role == "admin"
+    assert users["operator"].email == "operator@nigehban.local"  # placeholder, never a real address
+    assert users["admin"].email == "admin@nigehban.local"
     assert verify_password("operator123", users["operator"].password_hash)
     assert not verify_password("wrong", users["admin"].password_hash)
     cams = {c.name: c.location for c in db.scalars(select(Camera))}

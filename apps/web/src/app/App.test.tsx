@@ -1,9 +1,13 @@
 import { render, screen } from '@testing-library/react'
-import { expect, it } from 'vitest'
+import { afterEach, beforeEach, expect, it } from 'vitest'
 
+import { resetAuthState } from '../test/helpers'
 import App from './App'
 
-it('renders the foundation placeholder', () => {
+beforeEach(resetAuthState)
+afterEach(resetAuthState)
+
+it('opens on the sign-in page when nobody is logged in', async () => {
   render(<App />)
-  expect(screen.getByText(/foundation ready/i)).toBeTruthy()
+  expect(await screen.findByRole('heading', { name: 'Operator sign in' })).toBeTruthy()
 })

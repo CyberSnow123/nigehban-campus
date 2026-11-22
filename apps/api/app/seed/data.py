@@ -13,6 +13,7 @@ from nigehban_contracts import AlertStatus, BagClass, EventType, UserRole
 class SeedUser:
     username: str
     password: str  # dev only, never use in production
+    email: str  # placeholder address: nobody receives mail here
     display_name: str
     role: UserRole
 
@@ -46,8 +47,10 @@ class SeedAlert:
 
 
 USERS = (
-    SeedUser("operator", "operator123", "Duty Operator", UserRole.OPERATOR),
-    SeedUser("admin", "admin123", "Security Admin", UserRole.ADMIN),
+    SeedUser(
+        "operator", "operator123", "operator@nigehban.local", "Duty Operator", UserRole.OPERATOR
+    ),
+    SeedUser("admin", "admin123", "admin@nigehban.local", "Security Admin", UserRole.ADMIN),
 )
 
 CAMERAS = (

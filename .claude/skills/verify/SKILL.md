@@ -1,6 +1,7 @@
 ---
 name: verify
 description: Runtime verification recipe for Nigehban Campus (CLI, Postgres, contracts library, web dev server + /api proxy). Use when verifying a phase or change by running the app.
+model: sonnet
 ---
 
 # Verify Nigehban Campus at runtime

@@ -11,7 +11,11 @@ from app.db.base import Base
 
 # Backend.md §4, column for column.
 EXPECTED_COLUMNS = {
-    "users": {"id", "username", "display_name", "password_hash", "role", "created_at"},
+    "users": {
+        "id", "username", "display_name", "email", "password_hash", "password_changed_at",
+        "role", "created_at",
+    },
+    "password_reset_tokens": {"token_hash", "user_id", "expires_at", "used_at", "created_at"},
     "cameras": {"id", "name", "location", "is_active", "created_at"},
     "runs": {
         "id", "camera_id", "source", "video_path", "status", "is_demo", "pid",
@@ -61,6 +65,7 @@ def test_indexes_and_uniques(engine: Engine):
     }
     assert {
         ("users", ("username",)),
+        ("users", ("email",)),
         ("cameras", ("name",)),
         ("alerts", ("ref_code",)),
         ("alerts", ("event_id",)),

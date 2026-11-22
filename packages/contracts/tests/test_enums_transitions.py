@@ -39,7 +39,8 @@ def test_enum_values_match_contract():
         "confirmed_theft",
     }
     assert {s.value for s in RunStatus} == {"queued", "running", "completed", "stopped", "failed"}
-    assert len(ErrorCode) == 8
+    assert len(ErrorCode) == 9
+    assert ErrorCode.RATE_LIMITED.value == "RATE_LIMITED"
 
 
 def test_open_and_closed_partition_all_statuses():
