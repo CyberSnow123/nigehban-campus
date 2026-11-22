@@ -9,8 +9,8 @@ React 19 · Vite · TypeScript 6 (strict) · Tailwind CSS v4 (CSS-first `@theme`
 ```
 apps/web/src/
   app/            App.tsx, router.tsx, providers (QueryClient, Auth)
-  components/     ui primitives: Card, Button, Pill (type/status), StatTile, Modal, Table, EmptyState, DemoBadge, Snapshot
-  layout/         AppShell (sidebar + topbar), MobileTabBar
+  components/     ui primitives, one concern per file: Card (+CardHeader/CardBody), Button (+LinkButton, IconButton), Pill (+TypePill, StatusPill, DemoBadge), StatTile, KeyValue, PageHeader (+BackLink), controls (Segmented, SelectField, Toggle, RangeField, SwitchRow), charts (ProgressBar, Donut), Feed (Feed, FeedCard, FeedChip, Snapshot), Table, Pager, Modal (native <dialog>), EmptyState, Logo, icons
+  layout/         AppShell, Sidebar, Topbar, MobileTabBar, navItems, grids (page grid classes), useShellStatus (the one place the shell's badge numbers come from)
   features/
     auth/         LoginPage, LoggedOutPage, ForgotPasswordPage, ResetPasswordPage, AuthProvider + useAuth, RequireAuth, RequireAdmin
     dashboard/    DashboardPage, CameraPreviewCard, TodayAlerts
@@ -19,7 +19,7 @@ apps/web/src/
     history/      HistoryPage (filters, range, pagination)
     person/       PersonPage (alerts where track id is owner or carrier)
     settings/     SettingsPage (detection rules, theft check, cameras)
-  lib/            api/ (client.ts openapi-fetch wrapper, token.ts, openapi.json + schema.d.ts, generated), format.ts (times, durations), constants.ts
+  lib/            api/ (client.ts openapi-fetch wrapper, token.ts, openapi.json + schema.d.ts, generated), constants.ts (pill maps, role labels), cx.ts, usePageTitle.ts, format.ts (times, durations: Phase 7)
   styles/         tokens.css (from prototype :root), index.css
 ```
 
@@ -49,13 +49,17 @@ All routes except login and logged-out sit inside `RequireAuth` and `AppShell`. 
 - **New-alert cue:** when `stats.active` increases, show a toast and the sidebar badge, plus an optional sound (a local preference kept in `localStorage`).
 
 ## 5. Design rules (from the prototype)
-- Tokens: `--bg #f6f8fb`, `--card #fff`, `--line #e5e9f0`, `--ink #0f172a`, `--mute #64748b`, `--navy #0f172a`. Type colours: **red = abandoned**, **purple = possible theft**. Status colours: **amber = acknowledged**, **green = closed/resolved**, **blue = info**. Fonts: Inter, plus JetBrains Mono for IDs, times and ref codes.
+- Palette is fixed (D-14, with the dark theme added by D-15): every colour is a prototype `:root` value, plus the neutrals the prototype uses inline (`#f8fafc`, `#f1f5f9`, `#cbd5e1`, `#334155`, `#475569`, `#0b1220`, `#eef2f7`, `#10b981`, `#fecdd3`, `#e9d5ff`, `#eaf1ff`). All live in `styles/tokens.css`; do not add colours or use Tailwind's stock palette. Tokens: `--bg #f6f8fb`, `--card #fff`, `--line #e5e9f0`, `--ink #0f172a`, `--mute #64748b`, `--navy #0f172a`. Type colours: **red = abandoned**, **purple = possible theft**. Status colours: **amber = acknowledged**, **green = closed/resolved**, **blue = info**. Fonts: **IBM Plex Sans** for text and **IBM Plex Mono** for IDs, times, ref codes and figures, with tabular numerals.
+- **Dark theme (D-15):** `:root[data-theme='dark']` in `styles/tokens.css` swaps every colour variable (plum background `#150d1b`, cards `#1f1527`, pink accent `#fb7185`). `index.html` sets `data-theme` before first paint from `localStorage` (`nigehban-theme`) or the OS setting; `lib/theme.ts` (`useTheme`) and `components/ThemeToggle.tsx` switch it. Use semantic classes (`bg-card`, `text-ink`, `bg-soft`, `text-on-solid` on solid red/purple fills); never `bg-white` or a hex value, or the dark theme breaks. The favicon is the shield mark (`public/favicon.svg`, plus a 32 px PNG and an Apple touch icon).
+- **What may differ from the prototype (D-14):** typeface, spacing (4 px scale; 16 px between cards, 24 px between page sections), boxes (cards 12 px radius, 1 px border, no shadow; buttons, inputs and selects 8 px radius and at least 44 px tall; pills stay round) and tables (shaded header row, 13 px labels, row hover, mono IDs and times; under 760 px each row becomes a bordered card whose cells carry `data-label`). Everything else (views, sections, wording, icons, colours) is as in the prototype.
+- **Breakpoints:** 760 px (sidebar to bottom tabs, single column, stacked tables) and 1100 px (tile grid 4 to 2, two-column layouts to one, settings 3 to 1), as `tab:` and `wide:` in `tokens.css`.
+- **Sections without data:** still built, in place, with an empty state: a dash (`StatTile`, `KeyValue`), "No camera running", "No alerts yet". Controls whose action does not exist yet are disabled with a `title` naming the phase. Shell badges and dots stay hidden at 0. Never sample numbers (D-06).
 - Shell: 270 px sidebar plus main column. **Under 760 px:** a bottom tab bar (Dashboard, Live, Alerts, History, Settings) and a single column.
 - Wording: always **"Possible theft"**, never "Theft". Bags are only **handbag** or **backpack** (drop the prototype's "suitcase").
 - Status labels: `active` → "Active", `acknowledged` → "Acknowledged", `resolved` → "Resolved", `false_alarm` → "False alarm", `authorised_pickup` → "Authorised pickup", `confirmed_theft` → "Confirmed theft".
 - Close outcomes offered depend on type (Data-Contracts §2).
 - **`is_demo = true` → show a `DemoBadge` ("Demo data") on the card, detail page and live tile. Never hide it.**
-- Accessibility: focus-visible rings, 44 px touch targets, `aria-live` for new alerts, and never use colour alone (always include a text label).
+- Accessibility: focus-visible rings, 44 px touch targets (40 px compact buttons on desktop only), `aria-live` for new alerts, and never use colour alone (always include a text label). A "Skip to main content" link comes first. On a route change the page scrolls to the top and `<main>` takes focus (without scrolling it under the sticky topbar). Each route sets its `<title>` (`usePageTitle`). `prefers-reduced-motion` stops the blink and flow animations.
 
 ## 6. Quality bar
 - No `any`. API calls only go through `lib/api/client.ts`. Components never call `fetch` directly.

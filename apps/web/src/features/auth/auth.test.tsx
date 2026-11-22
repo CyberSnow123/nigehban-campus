@@ -39,7 +39,7 @@ describe('RequireAuth', () => {
     setToken('stored.jwt.token', true)
     const calls = mockApi(() => reply(200, OPERATOR))
     renderApp('/')
-    expect(await screen.findByText('Duty Operator')).toBeTruthy()
+    expect(await screen.findByRole('heading', { name: 'Dashboard' })).toBeTruthy()
     expect(calls).toHaveLength(1)
     expect(calls[0]).toMatchObject({
       path: '/api/auth/me',
@@ -67,7 +67,7 @@ describe('login', () => {
     const user = await logIn()
     await user.click(screen.getByRole('button', { name: 'Log in to monitoring' }))
 
-    expect(await screen.findByText('Duty Operator')).toBeTruthy()
+    expect(await screen.findByRole('heading', { name: 'Dashboard' })).toBeTruthy()
     expect(calls[0]).toMatchObject({
       method: 'POST',
       path: '/api/auth/login',
@@ -83,7 +83,7 @@ describe('login', () => {
     await user.click(screen.getByLabelText('Remember this terminal session'))
     await user.click(screen.getByRole('button', { name: 'Log in to monitoring' }))
 
-    await screen.findByText('Duty Operator')
+    await screen.findByRole('heading', { name: 'Dashboard' })
     expect(sessionStorage.getItem('nigehban.token')).toBe('jwt.token.value')
     expect(localStorage.getItem('nigehban.token')).toBeNull()
   })
@@ -128,7 +128,7 @@ describe('login', () => {
 
     blocked = false
     await user.click(submit)
-    expect(await screen.findByText('Duty Operator')).toBeTruthy()
+    expect(await screen.findByRole('heading', { name: 'Dashboard' })).toBeTruthy()
   })
 
   it('says so when the server cannot be reached', async () => {
@@ -151,7 +151,7 @@ describe('login', () => {
     await screen.findByRole('heading', { name: 'Operator sign in' })
     const user = await logIn()
     await user.click(screen.getByRole('button', { name: 'Log in to monitoring' }))
-    await screen.findByText('Duty Operator')
+    await screen.findByRole('heading', { name: 'Dashboard' })
     expect(calls.find((c) => c.path === '/api/auth/login')?.authorization).toBeNull()
   })
 
@@ -182,7 +182,7 @@ describe('logout and expiry', () => {
     mockApi((call) => (call.path === '/api/auth/login' ? loginOk() : reply(200, OPERATOR)))
     const router = renderApp('/login')
     await userEventLogin()
-    await screen.findByText('Duty Operator')
+    await screen.findByRole('heading', { name: 'Dashboard' })
     return router
   }
 
@@ -215,7 +215,7 @@ describe('logout and expiry', () => {
     mockApi((call) => (call.path === '/api/auth/login' ? loginOk() : reply(200, OPERATOR)))
     const router = renderApp('/login')
     await userEventLogin()
-    await screen.findByText('Duty Operator')
+    await screen.findByRole('heading', { name: 'Dashboard' })
 
     mockApi(() => apiError(401, 'UNAUTHORIZED', 'Invalid or expired token.'))
     await act(async () => {

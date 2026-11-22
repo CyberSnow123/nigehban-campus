@@ -144,6 +144,7 @@
 **Verification:** API tests cover every allowed and disallowed transition. Browser: ingest a fake event, see it in Alerts, acknowledge it, close it as `false_alarm`, and see the timeline.
 **Acceptance:** [ ] "Possible theft" wording everywhere · [ ] outcomes offered depend on type · [ ] audit row for every action.
 **Depends on:** 5, 6.
+**Carried from Phase 5 (decide in this phase):** gap 4 (the prototype's "Reopen alert" conflicts with terminal closed statuses: add `closed → active` or leave it out) and the `AlertType` / `AlertStatus` unions in `lib/constants.ts` (switch to the generated types).
 
 ### Phase 8: Dashboard, History, Person, polling
 **Objective:** Complete the read-side screens and make them live with 3 s polling.
@@ -157,6 +158,7 @@
 **Verification:** posting a fake event makes the dashboard counters and toast update within about 3 s without a reload.
 **Acceptance:** [ ] every prototype view except Live and Settings is functional on real API data.
 **Depends on:** 7.
+**Carried from Phase 5 (decide in this phase):** gap 1 (People/Bags tracked tiles have no field in `Stats`) and gap 5 (Average response on History). Feed `useShellStatus()` (`layout/useShellStatus.ts`) from `['stats']`.
 
 ### Phase 9: CV worker skeleton and mock source
 **Objective:** `nigehban-cv run --source mock` plays a scenario against a real video and feeds the API.
@@ -211,6 +213,7 @@
 **Verification:** starting a run from the UI shows the live frame and alerts arriving. Stop works. A changed threshold applies on the next run.
 **Acceptance:** [ ] full operator flow without a terminal · [ ] video paths are restricted to `data/videos`.
 **Depends on:** 8, 11.
+**Carried from Phase 5 (decide in this phase):** gap 2 (live tracking state for the dashboard "Current target", the Live inspector and the feed footer), gap 6 (the two theft-check switches have no `config.json` key) and gap 7 (Email alerts switch). Settings controls are built and disabled; enable them here. Feed `hasLiveRun` in `useShellStatus()`.
 
 ### Phase 13: Dataset tooling and coverage (parallel track)
 **Objective:** An organised, documented ~150-clip dataset with evidence of its coverage.
@@ -269,6 +272,7 @@
 5. Remove the mock theft from real runs.
 **Acceptance:** [ ] real `possible_theft` alerts on THF clips · [ ] none on NRM-OWN or NRM-HND · [ ] CLIP vs ReID comparison recorded.
 **Depends on:** 11, 16.
+**Carried from Phase 5:** gap 3 (owner and carrier appearance images for the "Is the carrier the owner?" card and the Person profile).
 
 ### Phase 18: Event-level evaluation and tuning (FYP-2)
 **Objective:** Prove the system works with numbers (Context.md §7).

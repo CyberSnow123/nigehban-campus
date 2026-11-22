@@ -14,7 +14,7 @@ nigehban-campus/
 │
 ├─ apps/
 │  ├─ web/                   React app → docs/Frontend.md
-│  │  ├─ src/{app,components,layout,features,lib,styles}   (tokens.css arrives in Phase 5)
+│  │  ├─ src/{app,components,layout,features,lib,styles}   (features/*/ hold a page plus its section components)
 │  │  ├─ package.json  vite.config.ts  tsconfig.json  eslint.config.js
 │  └─ api/                   FastAPI → docs/Backend.md
 │     ├─ app/{core,db,models,schemas,routers,services,seed}   (seed/assets: demo placeholder JPEG)

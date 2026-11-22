@@ -1,15 +1,10 @@
 import { type FormEvent, useState } from 'react'
 import { Link, Navigate, useSearchParams } from 'react-router-dom'
 
-import {
-  AuthCard,
-  AuthShell,
-  Field,
-  FormMessage,
-  Heading,
-  linkClass,
-  primaryButtonClass,
-} from './AuthShell'
+import { Button } from '../../components/Button'
+import { ArrowRightIcon, UserIcon } from '../../components/icons'
+import { AuthShell, BrandHeader, Field, FormMessage, Heading, linkClass } from './AuthShell'
+import { LoginArt } from './LoginArt'
 import { PasswordField } from './PasswordField'
 import { safeNextPath } from './nextPath'
 import { useAuth } from './useAuth'
@@ -41,9 +36,11 @@ export default function LoginPage() {
   }
 
   return (
-    <AuthShell>
-      <AuthCard>
-        <form onSubmit={onSubmit} noValidate>
+    <AuthShell wide>
+      <div className="grid overflow-hidden rounded-xl border border-line bg-card tab:grid-cols-2">
+        <LoginArt />
+        <form onSubmit={onSubmit} noValidate className="p-6 sm:p-10 tab:p-14">
+          <BrandHeader />
           <Heading
             title="Operator sign in"
             subtitle="Use your institutional account to open live campus monitoring."
@@ -52,6 +49,7 @@ export default function LoginPage() {
             label="Username"
             id="username"
             name="username"
+            icon={<UserIcon className="size-5" />}
             autoComplete="username"
             autoCapitalize="none"
             autoCorrect="off"
@@ -74,14 +72,15 @@ export default function LoginPage() {
             <input type="checkbox" name="remember" defaultChecked className="size-5 accent-navy" />
             Remember this terminal session
           </label>
-          <button type="submit" className={primaryButtonClass} disabled={pending}>
+          <Button type="submit" variant="dark" size="lg" wide disabled={pending}>
             {pending ? 'Logging in…' : 'Log in to monitoring'}
-          </button>
-          <p className="mt-6 border-t border-line pt-4 text-[13px] text-mute">
+            {!pending && <ArrowRightIcon className="size-4" />}
+          </Button>
+          <p className="mt-6 mb-0 border-t border-line pt-4 text-[13px] text-mute">
             Authorised campus security personnel only.
           </p>
         </form>
-      </AuthCard>
+      </div>
     </AuthShell>
   )
 }

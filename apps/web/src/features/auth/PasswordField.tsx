@@ -1,5 +1,8 @@
 import { type ReactNode, useState } from 'react'
 
+import { EyeIcon, EyeOffIcon, LockIcon } from '../../components/icons'
+import { inputClass } from './AuthShell'
+
 interface PasswordFieldProps {
   label: string
   id: string
@@ -26,6 +29,7 @@ export function PasswordField({
         {labelExtra}
       </div>
       <div className="relative">
+        <LockIcon className="pointer-events-none absolute top-[15px] left-3.5 size-5 text-mute" />
         <input
           id={id}
           name={name}
@@ -33,16 +37,16 @@ export function PasswordField({
           autoComplete={autoComplete}
           minLength={minLength}
           required
-          className="min-h-[50px] w-full rounded-xl border border-line bg-white px-4 pr-20 text-base"
+          className={`${inputClass} pr-14 pl-11`}
         />
         <button
           type="button"
           onClick={() => setVisible((v) => !v)}
           aria-pressed={visible}
           aria-label={`${visible ? 'Hide' : 'Show'} ${label.toLowerCase()}`}
-          className="absolute top-1 right-1 min-h-11 rounded-lg px-3 text-[13px] font-semibold text-mute hover:text-ink"
+          className="absolute top-[3px] right-1 grid size-11 place-items-center rounded-lg text-mute hover:bg-soft hover:text-ink"
         >
-          {visible ? 'Hide' : 'Show'}
+          {visible ? <EyeOffIcon className="size-5" /> : <EyeIcon className="size-5" />}
         </button>
       </div>
     </div>

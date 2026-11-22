@@ -1,4 +1,8 @@
-/* Design tokens from prototype/dashboard.html :root (Phase 5 extends this file). */
+/*
+ * Light palette copied from prototype/dashboard.html (:root and the neutrals it uses inline).
+ * Team rule (D-14): the light palette is fixed. The dark palette (D-15) is a plum theme taken from
+ * the team's dark dashboard mock-up. Every colour is a variable, so a theme only swaps values.
+ */
 :root {
   color-scheme: light;
   --bg: #f6f8fb;
@@ -17,6 +21,54 @@
   --grnBg: #ecfdf5;
   --blu: #2563eb;
   --bluBg: #eff4ff;
+  --org: #f59e0b;
+  --line-strong: #cbd5e1;
+  --soft: #f1f5f9;
+  --wash: #f8fafc;
+  --slate-ink: #334155;
+  --grey: #475569;
+  --feed: #0b1220;
+  --track: #eef2f7;
+  --live: #10b981;
+  --red-line: #fecdd3;
+  --pur-line: #e9d5ff;
+  --glow: #eaf1ff;
+  /* Text on solid red and purple fills. */
+  --on-solid: #fff;
+}
+
+/* Dark theme. Chosen with data-theme, or by the OS when the user has not chosen. */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #150d1b;
+  --card: #1f1527;
+  --line: #34273f;
+  --ink: #f3ecf7;
+  --mute: #a698b3;
+  --navy: #3b2a4a;
+  --red: #fb7185;
+  --redBg: #4a1d33;
+  --pur: #c084fc;
+  --purBg: #3a2358;
+  --amb: #fbbf24;
+  --ambBg: #44301a;
+  --grn: #34d399;
+  --grnBg: #12382f;
+  --blu: #93b4ff;
+  --bluBg: #1f2c57;
+  --org: #fbbf24;
+  --line-strong: #4b3a59;
+  --soft: #2b1e36;
+  --wash: #1a1122;
+  --slate-ink: #ded3e8;
+  --grey: #bcb0c8;
+  --feed: #0e0813;
+  --track: #2b1e36;
+  --live: #34d399;
+  --red-line: #7a2f4b;
+  --pur-line: #55337d;
+  --glow: #2c1b3d;
+  --on-solid: #1a0f22;
 }
 
 @theme inline {
@@ -26,23 +78,70 @@
   --color-ink: var(--ink);
   --color-mute: var(--mute);
   --color-navy: var(--navy);
-  --color-danger: var(--red);
-  --color-danger-bg: var(--redBg);
-  --color-ok: var(--grn);
-  --color-ok-bg: var(--grnBg);
-  --font-sans: Inter, system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --color-red: var(--red);
+  --color-red-bg: var(--redBg);
+  --color-pur: var(--pur);
+  --color-pur-bg: var(--purBg);
+  --color-amb: var(--amb);
+  --color-amb-bg: var(--ambBg);
+  --color-grn: var(--grn);
+  --color-grn-bg: var(--grnBg);
+  --color-blu: var(--blu);
+  --color-blu-bg: var(--bluBg);
+  --color-org: var(--org);
 }
 
-body {
-  margin: 0;
-  background: var(--bg);
-  color: var(--ink);
-  font: 15px/1.5 var(--font-sans);
-  overflow-x: clip;
+@theme inline {
+  --color-line-strong: var(--line-strong);
+  --color-soft: var(--soft);
+  --color-wash: var(--wash);
+  --color-slate-ink: var(--slate-ink);
+  --color-grey: var(--grey);
+  --color-feed: var(--feed);
+  --color-track: var(--track);
+  --color-live: var(--live);
+  --color-red-line: var(--red-line);
+  --color-pur-line: var(--pur-line);
+  --color-glow: var(--glow);
+  --color-on-solid: var(--on-solid);
 }
 
-:focus-visible {
-  outline: 2px solid var(--blu);
-  outline-offset: 2px;
+@theme static {
+
+  --font-sans: 'IBM Plex Sans', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+
+  /* Prototype breakpoints: shell and stacked tables at 760 px, grids at 1100 px. */
+  --breakpoint-tab: 761px;
+  --breakpoint-wide: 1101px;
+
+  --animate-blink: blink 1.4s infinite;
+  @keyframes blink {
+    50% {
+      opacity: 0.25;
+    }
+  }
+}
+
+@layer base {
+  * {
+    min-width: 0;
+  }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 1.5;
+    font-variant-numeric: tabular-nums;
+    overflow-x: clip;
+  }
+  [hidden] {
+    display: none !important;
+  }
+  :focus-visible {
+    outline: 2px solid var(--blu);
+    outline-offset: 2px;
+  }
 }
