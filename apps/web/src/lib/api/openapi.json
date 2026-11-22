@@ -316,10 +316,378 @@
           }
         }
       }
+    },
+    "/api/ingest/runs": {
+      "post": {
+        "tags": [
+          "ingest"
+        ],
+        "summary": "Create Run",
+        "description": "Register a run started from the CLI. It starts as ``running``.",
+        "operationId": "create_run_api_ingest_runs_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IngestRunCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Run"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or wrong X-Worker-Key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown run or camera",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The run cannot take this (RUN_NOT_RUNNING)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Request is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ]
+      }
+    },
+    "/api/ingest/runs/{run_id}/status": {
+      "post": {
+        "tags": [
+          "ingest"
+        ],
+        "summary": "Post Status",
+        "description": "Heartbeat (``running``) or final status. Terminal runs answer 409 RUN_NOT_RUNNING.",
+        "operationId": "post_status_api_ingest_runs__run_id__status_post",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunStatusUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Run"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or wrong X-Worker-Key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown run or camera",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The run cannot take this (RUN_NOT_RUNNING)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Request is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ingest/runs/{run_id}/frame": {
+      "post": {
+        "tags": [
+          "ingest"
+        ],
+        "summary": "Post Frame",
+        "operationId": "post_frame_api_ingest_runs__run_id__frame_post",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_post_frame_api_ingest_runs__run_id__frame_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Missing or wrong X-Worker-Key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown run or camera",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The run cannot take this (RUN_NOT_RUNNING)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Request is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ingest/events": {
+      "post": {
+        "tags": [
+          "ingest"
+        ],
+        "summary": "Post Event",
+        "description": "New event: 201 and a new alert. Resent ``event_id``: 200 with ``duplicate: true``.",
+        "operationId": "post_event_api_ingest_events_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_post_event_api_ingest_events_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IngestEventResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or wrong X-Worker-Key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown run or camera",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The run cannot take this (RUN_NOT_RUNNING)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Request is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Already received (duplicate)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IngestEventResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ]
+      }
     }
   },
   "components": {
     "schemas": {
+      "Body_post_event_api_ingest_events_post": {
+        "properties": {
+          "event": {
+            "type": "string",
+            "title": "Event",
+            "description": "DetectionEvent as JSON (Data-Contracts §3)"
+          },
+          "snapshot": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "Snapshot",
+            "description": "Alert snapshot, JPEG, max 2 MB"
+          }
+        },
+        "type": "object",
+        "required": [
+          "event",
+          "snapshot"
+        ],
+        "title": "Body_post_event_api_ingest_events_post"
+      },
+      "Body_post_frame_api_ingest_runs__run_id__frame_post": {
+        "properties": {
+          "frame": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "Frame",
+            "description": "Latest annotated frame, JPEG, max 2 MB"
+          }
+        },
+        "type": "object",
+        "required": [
+          "frame"
+        ],
+        "title": "Body_post_frame_api_ingest_runs__run_id__frame_post"
+      },
       "ErrorBody": {
         "properties": {
           "error": {
@@ -366,6 +734,14 @@
         ],
         "title": "ErrorDetail"
       },
+      "EventSource": {
+        "type": "string",
+        "enum": [
+          "real",
+          "mock"
+        ],
+        "title": "EventSource"
+      },
       "ForgotPasswordRequest": {
         "properties": {
           "email": {
@@ -408,6 +784,52 @@
           "database"
         ],
         "title": "HealthResponse"
+      },
+      "IngestEventResponse": {
+        "properties": {
+          "alert_id": {
+            "type": "string",
+            "pattern": "^alt_[0-9A-HJKMNP-TV-Z]{26}$",
+            "title": "Alert Id"
+          },
+          "duplicate": {
+            "type": "boolean",
+            "title": "Duplicate"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "alert_id",
+          "duplicate"
+        ],
+        "title": "IngestEventResponse"
+      },
+      "IngestRunCreate": {
+        "properties": {
+          "camera": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Camera"
+          },
+          "source": {
+            "$ref": "#/components/schemas/EventSource"
+          },
+          "video_path": {
+            "type": "string",
+            "title": "Video Path"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "camera",
+          "source",
+          "video_path"
+        ],
+        "title": "IngestRunCreate",
+        "description": "A standalone worker registers its own run. ``camera`` is the camera's unique name."
       },
       "LoginRequest": {
         "properties": {
@@ -499,6 +921,152 @@
         ],
         "title": "ResetPasswordRequest"
       },
+      "Run": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^run_[0-9A-HJKMNP-TV-Z]{26}$",
+            "title": "Id"
+          },
+          "camera_id": {
+            "type": "string",
+            "pattern": "^cam_[0-9A-HJKMNP-TV-Z]{26}$",
+            "title": "Camera Id"
+          },
+          "source": {
+            "$ref": "#/components/schemas/EventSource"
+          },
+          "video_path": {
+            "type": "string",
+            "title": "Video Path"
+          },
+          "status": {
+            "$ref": "#/components/schemas/RunStatus"
+          },
+          "is_demo": {
+            "type": "boolean",
+            "title": "Is Demo"
+          },
+          "frames_processed": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Frames Processed"
+          },
+          "fps": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fps"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "ended_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ended At"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "camera_id",
+          "source",
+          "video_path",
+          "status",
+          "is_demo",
+          "frames_processed"
+        ],
+        "title": "Run"
+      },
+      "RunStatus": {
+        "type": "string",
+        "enum": [
+          "queued",
+          "running",
+          "completed",
+          "stopped",
+          "failed"
+        ],
+        "title": "RunStatus"
+      },
+      "RunStatusUpdate": {
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/RunStatus"
+          },
+          "frames_processed": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Frames Processed"
+          },
+          "fps": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fps"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status",
+          "frames_processed"
+        ],
+        "title": "RunStatusUpdate",
+        "description": "Heartbeat a worker posts. ``queued`` is API-only, so it is rejected here."
+      },
       "UserMe": {
         "properties": {
           "id": {
@@ -541,6 +1109,11 @@
       "HTTPBearer": {
         "type": "http",
         "scheme": "bearer"
+      },
+      "APIKeyHeader": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Worker-Key"
       }
     }
   }

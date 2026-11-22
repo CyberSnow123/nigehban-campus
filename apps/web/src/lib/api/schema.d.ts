@@ -96,10 +96,108 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/ingest/runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Run
+         * @description Register a run started from the CLI. It starts as ``running``.
+         */
+        post: operations["create_run_api_ingest_runs_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ingest/runs/{run_id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post Status
+         * @description Heartbeat (``running``) or final status. Terminal runs answer 409 RUN_NOT_RUNNING.
+         */
+        post: operations["post_status_api_ingest_runs__run_id__status_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ingest/runs/{run_id}/frame": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Post Frame */
+        post: operations["post_frame_api_ingest_runs__run_id__frame_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ingest/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post Event
+         * @description New event: 201 and a new alert. Resent ``event_id``: 200 with ``duplicate: true``.
+         */
+        post: operations["post_event_api_ingest_events_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** Body_post_event_api_ingest_events_post */
+        Body_post_event_api_ingest_events_post: {
+            /**
+             * Event
+             * @description DetectionEvent as JSON (Data-Contracts §3)
+             */
+            event: string;
+            /**
+             * Snapshot
+             * @description Alert snapshot, JPEG, max 2 MB
+             */
+            snapshot: string;
+        };
+        /** Body_post_frame_api_ingest_runs__run_id__frame_post */
+        Body_post_frame_api_ingest_runs__run_id__frame_post: {
+            /**
+             * Frame
+             * @description Latest annotated frame, JPEG, max 2 MB
+             */
+            frame: string;
+        };
         /** ErrorBody */
         ErrorBody: {
             error: components["schemas"]["ErrorDetail"];
@@ -115,6 +213,11 @@ export interface components {
             /** Message */
             message: string;
         };
+        /**
+         * EventSource
+         * @enum {string}
+         */
+        EventSource: "real" | "mock";
         /** ForgotPasswordRequest */
         ForgotPasswordRequest: {
             /** Email */
@@ -132,6 +235,24 @@ export interface components {
              * @enum {string}
              */
             database: "connected" | "disconnected";
+        };
+        /** IngestEventResponse */
+        IngestEventResponse: {
+            /** Alert Id */
+            alert_id: string;
+            /** Duplicate */
+            duplicate: boolean;
+        };
+        /**
+         * IngestRunCreate
+         * @description A standalone worker registers its own run. ``camera`` is the camera's unique name.
+         */
+        IngestRunCreate: {
+            /** Camera */
+            camera: string;
+            source: components["schemas"]["EventSource"];
+            /** Video Path */
+            video_path: string;
         };
         /** LoginRequest */
         LoginRequest: {
@@ -168,6 +289,47 @@ export interface components {
             token: string;
             /** New Password */
             new_password: string;
+        };
+        /** Run */
+        Run: {
+            /** Id */
+            id: string;
+            /** Camera Id */
+            camera_id: string;
+            source: components["schemas"]["EventSource"];
+            /** Video Path */
+            video_path: string;
+            status: components["schemas"]["RunStatus"];
+            /** Is Demo */
+            is_demo: boolean;
+            /** Frames Processed */
+            frames_processed: number;
+            /** Fps */
+            fps?: number | null;
+            /** Started At */
+            started_at?: string | null;
+            /** Ended At */
+            ended_at?: string | null;
+            /** Message */
+            message?: string | null;
+        };
+        /**
+         * RunStatus
+         * @enum {string}
+         */
+        RunStatus: "queued" | "running" | "completed" | "stopped" | "failed";
+        /**
+         * RunStatusUpdate
+         * @description Heartbeat a worker posts. ``queued`` is API-only, so it is rejected here.
+         */
+        RunStatusUpdate: {
+            status: components["schemas"]["RunStatus"];
+            /** Frames Processed */
+            frames_processed: number;
+            /** Fps */
+            fps?: number | null;
+            /** Message */
+            message?: string | null;
         };
         /** UserMe */
         UserMe: {
@@ -449,6 +611,257 @@ export interface operations {
             };
             /** @description Too many attempts from this address */
             429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    create_run_api_ingest_runs_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IngestRunCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Run"];
+                };
+            };
+            /** @description Missing or wrong X-Worker-Key */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Unknown run or camera */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description The run cannot take this (RUN_NOT_RUNNING) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Request is not valid */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    post_status_api_ingest_runs__run_id__status_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RunStatusUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Run"];
+                };
+            };
+            /** @description Missing or wrong X-Worker-Key */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Unknown run or camera */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description The run cannot take this (RUN_NOT_RUNNING) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Request is not valid */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    post_frame_api_ingest_runs__run_id__frame_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_post_frame_api_ingest_runs__run_id__frame_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing or wrong X-Worker-Key */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Unknown run or camera */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description The run cannot take this (RUN_NOT_RUNNING) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Request is not valid */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    post_event_api_ingest_events_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_post_event_api_ingest_events_post"];
+            };
+        };
+        responses: {
+            /** @description Already received (duplicate) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IngestEventResponse"];
+                };
+            };
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IngestEventResponse"];
+                };
+            };
+            /** @description Missing or wrong X-Worker-Key */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Unknown run or camera */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description The run cannot take this (RUN_NOT_RUNNING) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Request is not valid */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

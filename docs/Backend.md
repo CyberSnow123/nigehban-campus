@@ -15,7 +15,8 @@ apps/api/
     models/            SQLAlchemy tables (one file per table)
     schemas/           API-only request models; shared shapes import nigehban_contracts
     routers/           auth, alerts, stats, runs, cameras, ingest, settings
-    services/          alert_service (transitions, ref_code), run_launcher (subprocess), storage (snapshots/frames)
+    services/          alert_service (new alert from an event; transitions in Phase 7), ingest_service (event checks, idempotency), run_service (worker runs and status), ref_codes, run_launcher (subprocess, Phase 12), storage (snapshots/frames under DATA_DIR)
+    db/locks.py        PostgreSQL advisory locks (event_id, ref_code year)
   alembic/             migrations
   scripts/seed.py      users, cameras, demo alerts (is_demo=true)
   tests/
@@ -45,13 +46,13 @@ Rule: routers stay thin, and the business rules (transitions, idempotency) live 
 | GET | `/api/videos` | user | files available under `DATA_DIR/videos` |
 | GET | `/api/settings` | user | detection settings (subset of cv `config.json`) |
 | PATCH | `/api/settings` | admin | update `association`, `abandon`, `theft` thresholds in `config.json`. Applies to the **next** run. Validated by the contracts model |
-| POST | `/api/ingest/runs` | worker | create run (standalone CLI) |
-| POST | `/api/ingest/runs/{id}/status` | worker | status and FPS heartbeat |
-| POST | `/api/ingest/runs/{id}/frame` | worker | latest frame |
-| POST | `/api/ingest/events` | worker | event + snapshot → alert (idempotent) |
+| POST | `/api/ingest/runs` | worker | `IngestRunCreate {camera (name), source, video_path}` → `201 Run` (`running`). Unknown camera `404`, inactive `422` |
+| POST | `/api/ingest/runs/{id}/status` | worker | `RunStatusUpdate` → `200 Run`. A move `RUN_TRANSITIONS` refuses → `409 RUN_NOT_RUNNING` |
+| POST | `/api/ingest/runs/{id}/frame` | worker | multipart `frame` (JPEG ≤ 2 MB) → `204`, overwrites `frames/{run_id}.jpg`. Run not running → `409` |
+| POST | `/api/ingest/events` | worker | multipart `event` (JSON) + `snapshot` (JPEG ≤ 2 MB) → `201 {alert_id, duplicate:false}`; resent `event_id` → `200 {duplicate:true}` |
 | GET | `/api/health` | none | `200 {"status":"ok","database":"connected"}`, or `503 {"status":"degraded","database":"disconnected"}` when `SELECT 1` fails. No error details. API-only shape (`app/schemas/health.py`) |
 
-Auth: `Authorization: Bearer <jwt>` (12 h expiry) for users, and `X-Worker-Key` for the `ingest` routes. Logout happens on the client (token dropped); there is no server-side revocation, so a copied token stays valid until it expires (a password reset signs it out).
+Auth: `Authorization: Bearer <jwt>` (12 h expiry) for users, and `X-Worker-Key` for the `ingest` routes (compared in constant time; a missing or wrong key is `401` without `WWW-Authenticate`, and a user token is not accepted there). Logout happens on the client (token dropped); there is no server-side revocation, so a copied token stays valid until it expires (a password reset signs it out).
 
 ## 4. Database tables
 | Table | Columns |
@@ -77,12 +78,14 @@ Column rules (Phase 3, enforced by named check constraints `ck_<table>_<rule>`):
 - **Paths:** `alerts.snapshot_path` is relative to `DATA_DIR` (`snapshots/{run_id}/{event_id}.jpg`); `runs.video_path` is relative to `DATA_DIR/videos`.
 - **Timestamps** are `timestamptz`; `created_at` and `alert_actions.at` default to `now()`.
 
-`ref_code` sequence: per year, counting both types (`SEC-2026-001-A`, `SEC-2026-002-T`, …). `app/services/ref_codes.py` takes the highest number used that year + 1; the unique key is the safety net (locking for concurrent ingest arrives with Phase 6).
+`ref_code` sequence: per year, counting both types (`SEC-2026-001-A`, `SEC-2026-002-T`, …). `app/services/ref_codes.py` takes a per-year advisory transaction lock, then the highest number used that year + 1, so parallel ingests get distinct numbers; the unique key is the safety net.
 
 ## 5. Behaviour rules
 - **Transitions** are enforced in `alert_service` only, following the table in Data-Contracts §2. Every change writes an `alert_actions` row in the same transaction.
-- **Ingest idempotency:** a unique `event_id` makes a duplicate return `200 {duplicate:true}`.
-- **Ingest validation:** the run must exist and be `running`, and the camera must match the run. The snapshot is saved first; if the DB insert fails, the file is deleted.
+- **Ingest idempotency:** the event service takes an advisory lock on the `event_id`, then looks it up: a known one returns `200 {duplicate:true}` with the first alert's ID, even after the run has ended. Parallel retries run one after the other. A unique-violation on `event_id` (safety net) is also answered as a duplicate, and the file is kept because it belongs to the first alert.
+- **Ingest validation** (Data-Contracts §4, in order): `event` parses as a `DetectionEvent`; duplicate check; the run exists (`404`) and is `running` (`409 RUN_NOT_RUNNING`); `camera_id` and `source` equal the run's (`422`: a mock run can never produce a real alert); the snapshot starts with `FF D8 FF` and is at most 2 MB (read in chunks, stops early). `is_demo` is copied from the run. The snapshot is written first (temp file + `os.replace`) to `snapshots/{run_id}/{event_id}.jpg`; if the insert or commit fails, the file is deleted.
+- **Run status:** `run_service.apply_status` locks the run row, checks `can_update_run`, overwrites `frames_processed`, `fps` (kept when sent as `null`) and `message`, sets `started_at` on the first `running` and `ended_at` on a terminal status.
+- **Frames:** `frames/{run_id}.jpg`, replaced atomically, so a reader never sees half a file. The API does not limit the rate; the worker pushes about once a second.
 - **run_launcher:** `subprocess.Popen([... "nigehban-cv", "run", "--run-id", id, "--source", src, "--video", path])` with the env passing `NIGEHBAN_WORKER_KEY`. The PID is stored. On API startup, any `running` run whose PID is dead is marked `failed`.
 - **Paths:** `video_path` must resolve inside `DATA_DIR/videos` (reject `..`). File paths are never returned to the client.
 - **Errors:** every exception is mapped to the error shape (Data-Contracts §6) by `core/errors.py`. HTTP errors map by status (401 `UNAUTHORIZED` with `WWW-Authenticate: Bearer`, 403 `FORBIDDEN`, 404 and 405 `NOT_FOUND`). FastAPI's default `{"detail": [...]}` 422 becomes `422 VALIDATION_ERROR` with one `field: reason` per error, and the request body is **not** echoed. Anything unexpected is `500 INTERNAL_ERROR`; the traceback is logged, never returned. Services raise `ApiError(status, code, message)`. OpenAPI documents these shapes (`ERROR_RESPONSES`), so the generated web types match what the API really sends.

@@ -4,6 +4,8 @@ No tracebacks, no file paths and no echoed request input ever reach the client.
 """
 
 import logging
+from collections.abc import Sequence
+from typing import Any
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
@@ -40,19 +42,43 @@ ERROR_RESPONSES: dict[int | str, dict] = {
     422: {"model": ErrorBody, "description": "Request is not valid"},
 }
 
+# For the worker-only ingest routes (Data-Contracts §4).
+INGEST_ERROR_RESPONSES: dict[int | str, dict] = {
+    401: {"model": ErrorBody, "description": "Missing or wrong X-Worker-Key"},
+    404: {"model": ErrorBody, "description": "Unknown run or camera"},
+    409: {"model": ErrorBody, "description": "The run cannot take this (RUN_NOT_RUNNING)"},
+    422: {"model": ErrorBody, "description": "Request is not valid"},
+}
+
 
 class ApiError(Exception):
-    """Raised by routers and services; rendered in the standard error shape."""
+    """Raised by routers and services; rendered in the standard error shape.
 
-    def __init__(self, status_code: int, code: ErrorCode, message: str):
+    ``bearer`` adds ``WWW-Authenticate: Bearer`` to a 401. It is off for the worker key,
+    which is not a Bearer token."""
+
+    def __init__(self, status_code: int, code: ErrorCode, message: str, bearer: bool = True):
         super().__init__(message)
         self.status_code = status_code
         self.code = code
         self.message = message
+        self.bearer = bearer
 
 
 def unauthorized(message: str = "Authentication required.") -> ApiError:
     return ApiError(401, ErrorCode.UNAUTHORIZED, message)
+
+
+def worker_unauthorized() -> ApiError:
+    return ApiError(401, ErrorCode.UNAUTHORIZED, "Missing or wrong worker key.", bearer=False)
+
+
+def not_found(message: str = "Not found.") -> ApiError:
+    return ApiError(404, ErrorCode.NOT_FOUND, message)
+
+
+def run_not_running(message: str) -> ApiError:
+    return ApiError(409, ErrorCode.RUN_NOT_RUNNING, message)
 
 
 def forbidden(message: str = "You do not have permission to do that.") -> ApiError:
@@ -64,11 +90,15 @@ def validation_error(message: str) -> ApiError:
 
 
 def error_response(
-    status_code: int, code: ErrorCode, message: str, headers: dict[str, str] | None = None
+    status_code: int,
+    code: ErrorCode,
+    message: str,
+    headers: dict[str, str] | None = None,
+    bearer: bool = True,
 ) -> JSONResponse:
     body = ErrorBody(error=ErrorDetail(code=code, message=message))
     headers = dict(headers or {})
-    if status_code == 401:
+    if status_code == 401 and bearer:
         headers["WWW-Authenticate"] = "Bearer"
     return JSONResponse(body.model_dump(mode="json"), status_code=status_code, headers=headers)
 
@@ -80,19 +110,25 @@ def _wait_text(seconds: int) -> str:
     return f"{minutes} minutes"
 
 
-def _field_messages(exc: RequestValidationError) -> str:
-    """``field: reason`` per error. Only Pydantic's reason text is used, never the input."""
+def field_messages(errors: Sequence[Any], skip: int = 0, prefix: str = "") -> str:
+    """``field: reason`` per Pydantic error. Only the reason text is used, never the input.
+
+    ``skip`` drops leading location parts (``body``/``query`` for request errors), ``prefix``
+    names the form field a nested JSON document came from."""
     parts = []
-    for err in exc.errors():
-        field = ".".join(str(p) for p in err["loc"][1:]) or str(err["loc"][0])
-        parts.append(f"{field}: {err['msg']}")
+    for err in errors:
+        loc = [str(p) for p in err["loc"]]
+        # For broken JSON the location is a character offset, not a field: name the part only.
+        path = loc[:1] if err.get("type") == "json_invalid" else loc[skip:]
+        field = ".".join([prefix, *path] if prefix else path) or ".".join(loc)
+        parts.append(f"{field}: {err['msg']}" if field else err["msg"])
     return "; ".join(parts) or _CODE_MESSAGES[ErrorCode.VALIDATION_ERROR]
 
 
 def register_error_handlers(app: FastAPI) -> None:
     @app.exception_handler(ApiError)
     async def _api_error(_: Request, exc: ApiError) -> JSONResponse:
-        return error_response(exc.status_code, exc.code, exc.message)
+        return error_response(exc.status_code, exc.code, exc.message, bearer=exc.bearer)
 
     @app.exception_handler(StarletteHTTPException)
     async def _http_error(_: Request, exc: StarletteHTTPException) -> JSONResponse:
@@ -110,7 +146,7 @@ def register_error_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(RequestValidationError)
     async def _validation_error(_: Request, exc: RequestValidationError) -> JSONResponse:
-        return error_response(422, ErrorCode.VALIDATION_ERROR, _field_messages(exc))
+        return error_response(422, ErrorCode.VALIDATION_ERROR, field_messages(exc.errors(), 1))
 
     @app.exception_handler(Exception)
     async def _unexpected(request: Request, exc: Exception) -> JSONResponse:

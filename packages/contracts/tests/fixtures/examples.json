@@ -128,5 +128,6 @@
     "theft": { "min_displacement_ratio": 1.5, "min_frames": 15, "owner_match_threshold": 0.6 },
     "output": { "annotated_video": true, "events_csv": true, "frame_push_interval_s": 1.0 },
     "api": { "base_url": "http://localhost:8000", "api_key_env": "NIGEHBAN_WORKER_KEY" }
-  }
+  },
+  "ingest_run": { "camera": "CAM 01", "source": "mock", "video_path": "office_01.mp4" }
 }
