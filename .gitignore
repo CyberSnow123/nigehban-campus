@@ -1,0 +1,35 @@
+# secrets / env
+.env
+.env.*
+!.env.example
+
+# runtime data (keep folder skeleton only)
+data/**
+!data/**/
+!data/**/.gitkeep
+
+# python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+
+# web
+node_modules/
+dist/
+*.tsbuildinfo
+
+# models and dataset clips
+*.pt
+*.onnx
+dataset/**/*.mp4
+dataset/**/*.avi
+dataset/**/*.mov
+dataset/**/*.mkv
+
+# misc
+pgdata/
+.DS_Store
+graphify-out/
+/prompt.md

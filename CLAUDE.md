@@ -10,7 +10,7 @@ Campus video-analytics FYP (FAST-NUCES). It watches recorded camera footage and 
 4. [docs/Architecture.md](docs/Architecture.md) and [docs/Data-Contracts.md](docs/Data-Contracts.md)
 5. The area doc for your task: [Backend](docs/Backend.md) · [Frontend](docs/Frontend.md) · [CV-Pipeline](docs/CV-Pipeline.md) · [Dataset](docs/Dataset.md) · [Folder-Structure](docs/Folder-Structure.md)
 
-UI reference: `prototype/dashboard.html` (`dashboard.html` at the root until Phase 1). UML and DFD diagrams: `diagrams/uml/`.
+UI reference: `prototype/dashboard.html`. UML and DFD diagrams: `diagrams/uml/`.
 
 ## Stack
 
@@ -61,5 +61,5 @@ cd apps/api && uv run uvicorn app.main:app --reload --port 8000
 cd apps/web && bun install && bun dev                  # http://localhost:5173
 uv run nigehban-cv run --video data/videos/x.mp4 --camera "CAM 01" --source mock|real
 uv run pytest                                          # all Python tests
-cd apps/web && bun test
+cd apps/web && bun run test
 ```
