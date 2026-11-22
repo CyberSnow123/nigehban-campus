@@ -1,2 +1,62 @@
 @import 'tailwindcss';
 @import './tokens.css';
+
+/* Dashed "flow" line between a person and a bag on a feed (prototype .flow). */
+@keyframes flow {
+  to {
+    stroke-dashoffset: -16;
+  }
+}
+.flow {
+  stroke-dasharray: 8 8;
+  animation: flow 1s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .flow {
+    animation: none;
+  }
+}
+
+/* Tables turn into one bordered card per row under 760 px (each cell carries data-label). */
+@media (max-width: 760px) {
+  .stack thead {
+    display: none;
+  }
+  .stack tbody tr {
+    display: grid;
+    gap: 2px;
+    margin: 12px;
+    padding: 8px 12px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+  }
+  .stack tbody td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 6px 0;
+    border: 0;
+    text-align: right;
+  }
+  .stack tbody td::before {
+    content: attr(data-label);
+    color: var(--mute);
+    font-size: 12px;
+    font-weight: 600;
+    text-align: left;
+  }
+  .stack tbody td.stack-note {
+    display: block;
+    text-align: center;
+  }
+  .stack tbody td.stack-note::before {
+    content: none;
+  }
+  .stack tbody tr:has(td.stack-note) {
+    display: block;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+}

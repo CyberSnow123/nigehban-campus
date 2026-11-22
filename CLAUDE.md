@@ -62,4 +62,9 @@ cd apps/web && bun install && bun dev                  # http://localhost:5173
 uv run nigehban-cv run --video data/videos/x.mp4 --camera "CAM 01" --source mock|real
 uv run pytest                                          # all Python tests
 cd apps/web && bun run test
+
+# Shortcuts from the repo root (extra args are passed through)
+uv run poe dev:api                                     # API on :8000
+uv run poe dev:web                                     # web on :5173
+uv run poe dev:ml run --video data/videos/x.mp4 ...    # CV worker (the run command lands in a later phase)
 ```

@@ -69,6 +69,14 @@ The FYP-1 progress check expects about 40% of the work to be shown this week. Da
 - **Decision:** `services/cv` declares only light dependencies in Phase 1 (contracts, httpx, numpy, opencv-python-headless). `ultralytics` and torch arrive with the real baseline in Phase 10.
 - **Why:** Keeps `uv sync` fast and the lockfile stable until the code that needs them exists.
 
+### D-14: The prototype UI is preserved; only type, spacing, boxes and tables are refined
+- **Decision:** The web app keeps every view, section, wording and icon of `prototype/dashboard.html`, and **its exact colour palette** (no new colours). Only four things may differ: the typeface (**IBM Plex Sans** with **IBM Plex Mono**, replacing Inter and JetBrains Mono), spacing (a 4 px scale), boxes (12 px cards with a border and no shadow, 8 px controls) and tables (shaded header, row hover, stacked cards under 760 px). A section whose data does not exist yet is still built, with an honest empty state instead of the prototype's sample numbers (D-06). *Amended by D-15: the palette above is the light theme; a dark theme is added.*
+- **Why:** The prototype is the team-approved design, and a missing section is easy to overlook. The team found the original font too generic. Prototype sections with no data source are recorded as gaps in [phase-05.md](phases/phase-05.md) and decided in the phase that fills them (7, 8, 12, 17).
+
+### D-15: A dark theme, in a plum palette, alongside the light theme
+- **Decision:** The web app has a light and a dark theme. Light is the prototype palette of D-14, unchanged. Dark uses a deep-plum palette taken from the team's dark dashboard mock-up (background `#150d1b`, cards `#1f1527`, pink `#fb7185` for abandoned/alert accents). The theme follows the OS setting until the user picks one with the sun/moon button in the top bar (or the corner of the login pages); the choice is kept in `localStorage` (`nigehban-theme`). Every colour is a CSS variable in `styles/tokens.css`, so a theme only swaps values.
+- **Why:** Operators watch screens for long shifts, often in dark rooms. The team supplied the dark look as a picture. Layout, sections and wording stay as in D-14; only colour values differ per theme.
+
 ---
 
 ## Status by module (FYP-1)

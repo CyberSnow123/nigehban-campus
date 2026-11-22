@@ -3,7 +3,7 @@
 members = ["apps/api", "services/cv", "packages/contracts"]
 
 [dependency-groups]
-dev = ["pytest>=8", "pytest-cov", "ruff", "httpx"]
+dev = ["pytest>=8", "pytest-cov", "ruff", "httpx", "poethepoet"]
 
 [tool.ruff]
 line-length = 100
@@ -22,3 +22,18 @@ known-first-party = ["app"]
 [tool.pytest.ini_options]
 testpaths = ["packages/contracts/tests", "apps/api/tests", "services/cv/tests"]
 addopts = "--import-mode=importlib"
+
+# Shortcuts: `uv run poe dev:api`, `dev:web`, `dev:ml`. Extra args are passed through.
+[tool.poe.tasks."dev:api"]
+cmd = "uv run uvicorn app.main:app --reload --port 8000"
+cwd = "apps/api"
+help = "API on :8000"
+
+[tool.poe.tasks."dev:web"]
+cmd = "bun dev"
+cwd = "apps/web"
+help = "Web on :5173"
+
+[tool.poe.tasks."dev:ml"]
+cmd = "uv run nigehban-cv"
+help = "CV worker (pass args, e.g. --version)"

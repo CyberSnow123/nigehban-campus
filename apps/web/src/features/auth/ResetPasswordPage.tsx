@@ -70,7 +70,7 @@ export default function ResetPasswordPage() {
             </Link>
           </div>
         ) : !token ? (
-          <p role="alert" className="mt-4 text-danger">
+          <p role="alert" className="mt-4 text-red">
             This reset link is incomplete. {requestNewLink}.
           </p>
         ) : (

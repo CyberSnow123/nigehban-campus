@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
 
-import { AuthShell, Logo, primaryButtonClass } from './AuthShell'
+import { LinkButton } from '../../components/Button'
+import { Logo } from '../../components/Logo'
+import { Pill } from '../../components/Pill'
+import { AuthShell } from './AuthShell'
 import { useAuth } from './useAuth'
 
 const timeFormat = new Intl.DateTimeFormat([], {
@@ -23,23 +26,23 @@ export default function LoggedOutPage() {
 
   return (
     <AuthShell>
-      <div className="rounded-[18px] border border-line border-t-4 border-t-emerald-500 bg-card px-8 py-10 text-center shadow-[0_1px_3px_#0f172a0a]">
+      <div className="rounded-xl border border-line border-t-4 border-t-live bg-card px-8 py-10 text-center">
         <div className="mx-auto mb-[18px] w-fit">
           <Logo large />
         </div>
-        <h1 className="text-[clamp(26px,3vw,32px)] leading-[1.15] font-bold tracking-tight">
+        <h1 className="m-0 text-[clamp(26px,3vw,32px)] leading-tight font-semibold tracking-tight">
           You have been logged out
         </h1>
         <p className="mt-1.5 text-mute">
           Your session ended at <b className="font-mono">{loggedOutAt}</b>. Live monitoring
           continues in the background.
         </p>
-        <p className="my-5 inline-block rounded-full bg-ok-bg px-3 py-1 text-[13px] font-semibold text-ok">
-          Active feeds and automatic alerts keep running
+        <p className="my-5">
+          <Pill tone="grn">Active feeds and automatic alerts keep running</Pill>
         </p>
-        <Link to="/login" className={primaryButtonClass}>
+        <LinkButton to="/login" variant="dark" size="lg" wide>
           Log in again
-        </Link>
+        </LinkButton>
       </div>
     </AuthShell>
   )
