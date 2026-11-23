@@ -46,3 +46,18 @@ RUN_TRANSITIONS: dict[RunStatus, frozenset[RunStatus]] = {
 
 def can_update_run(from_status: RunStatus, to_status: RunStatus) -> bool:
     return RunStatus(to_status) in RUN_TRANSITIONS[RunStatus(from_status)]
+
+
+_STATUS_ORDER = (
+    AlertStatus.ACKNOWLEDGED,
+    AlertStatus.RESOLVED,
+    AlertStatus.FALSE_ALARM,
+    AlertStatus.AUTHORISED_PICKUP,
+    AlertStatus.CONFIRMED_THEFT,
+)
+
+
+def next_statuses(event_type: EventType, status: AlertStatus) -> list[AlertStatus]:
+    """Where this alert can go now, in a fixed order (``Alert.next_statuses``)."""
+    allowed = ALLOWED_TRANSITIONS[(EventType(event_type), AlertStatus(status))]
+    return [target for target in _STATUS_ORDER if target in allowed]

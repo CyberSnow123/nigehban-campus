@@ -34,6 +34,7 @@ from nigehban_contracts.transitions import (
     allowed_outcomes,
     can_transition,
     can_update_run,
+    next_statuses,
 )
 
 __version__ = "0.1.0"
@@ -86,5 +87,6 @@ __all__ = [
     "format_ref_code",
     "is_valid_id",
     "new_id",
+    "next_statuses",
     "validate_id",
 ]

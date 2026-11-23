@@ -17,7 +17,7 @@ nigehban-campus/
 │  │  ├─ src/{app,components,layout,features,lib,styles}   (features/*/ hold a page plus its section components)
 │  │  ├─ package.json  vite.config.ts  tsconfig.json  eslint.config.js
 │  └─ api/                   FastAPI → docs/Backend.md
-│     ├─ app/{core,db,models,schemas,routers,services,seed}   (seed/assets: demo placeholder JPEG; db/locks.py: advisory locks; services/{storage,run_service,ingest_service,alert_service}.py)
+│     ├─ app/{core,db,models,schemas,routers,services,seed}   (seed/assets: demo placeholder JPEG; db/locks.py: advisory locks; services/{storage,run_service,ingest_service,alert_service,alert_query}.py; schemas/alerts.py: list filters)
 │     ├─ alembic.ini  alembic/versions/  scripts/{seed,set_user_email,export_openapi,post_fake_event}.py  tests/
 │     └─ pyproject.toml
 │

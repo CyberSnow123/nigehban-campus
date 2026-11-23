@@ -51,6 +51,13 @@ INGEST_ERROR_RESPONSES: dict[int | str, dict] = {
 }
 
 
+ALERT_ERROR_RESPONSES: dict[int | str, dict] = {
+    **ERROR_RESPONSES,
+    404: {"model": ErrorBody, "description": "No alert with this ID"},
+    409: {"model": ErrorBody, "description": "Move not allowed (INVALID_TRANSITION)"},
+}
+
+
 class ApiError(Exception):
     """Raised by routers and services; rendered in the standard error shape.
 
@@ -79,6 +86,10 @@ def not_found(message: str = "Not found.") -> ApiError:
 
 def run_not_running(message: str) -> ApiError:
     return ApiError(409, ErrorCode.RUN_NOT_RUNNING, message)
+
+
+def invalid_transition(message: str) -> ApiError:
+    return ApiError(409, ErrorCode.INVALID_TRANSITION, message)
 
 
 def forbidden(message: str = "You do not have permission to do that.") -> ApiError:

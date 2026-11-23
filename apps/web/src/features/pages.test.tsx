@@ -3,7 +3,9 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
+import { Providers } from '../app/providers'
 import { setToken } from '../lib/api/token'
+import { makeAlert, page } from '../test/alerts'
 import { OPERATOR, mockApi, renderApp, reply, resetAuthState } from '../test/helpers'
 import { AlertDetailView } from './alerts/AlertDetailPage'
 
@@ -18,7 +20,12 @@ afterEach(resetAuthState)
 
 async function openSignedIn(path: string) {
   setToken('stored.jwt.token', false)
-  mockApi(() => reply(200, OPERATOR))
+  mockApi(({ path: url }) => {
+    if (url === '/api/alerts') return reply(200, page([]))
+    // An alert detail that never arrives: the page stays in its loading layout.
+    if (url.startsWith('/api/alerts/')) return new Promise<never>(() => {})
+    return reply(200, OPERATOR)
+  })
   const router = renderApp(path)
   await screen.findByRole('main')
   return router
@@ -128,7 +135,7 @@ describe('Security Alerts', () => {
       'Status',
       'Action',
     ])
-    expect(screen.getByText('No alerts yet.')).toBeTruthy()
+    expect(await screen.findByText('No alerts yet.')).toBeTruthy()
   })
 
   it('keeps filters in the address and shows the search note with a clear button', async () => {
@@ -137,7 +144,7 @@ describe('Security Alerts', () => {
     expect(screen.getByRole('button', { name: 'Possible theft', pressed: true })).toBeTruthy()
     // An unknown status falls back to "all".
     expect(screen.getByRole('combobox', { name: 'Status' })).toHaveValue('all')
-    expect(screen.getByText('No alerts match these filters.')).toBeTruthy()
+    expect(await screen.findByText('No alerts match these filters.')).toBeTruthy()
     expect(screen.getByText(/Search: bag 31/)).toBeTruthy()
 
     await user.click(screen.getByRole('button', { name: 'Clear search' }))
@@ -149,19 +156,24 @@ describe('Security Alerts', () => {
 })
 
 describe('Alert detail', () => {
-  const inRouter = (type?: 'abandoned_bag' | 'possible_theft') =>
+  // The view is shown on its own here (no API): the snapshot request is answered by nothing.
+  const inRouter = (type: 'abandoned_bag' | 'possible_theft') => {
+    mockApi(() => new Promise<never>(() => {}))
     render(
-      <MemoryRouter>
-        <AlertDetailView type={type} />
-      </MemoryRouter>,
+      <Providers>
+        <MemoryRouter>
+          <AlertDetailView alert={makeAlert({ type })} />
+        </MemoryRouter>
+      </Providers>,
     )
+  }
 
   it('has the sections every alert has', () => {
     inRouter('abandoned_bag')
     expect(screen.getByRole('link', { name: /Back to Alerts/ })).toHaveAttribute('href', '/alerts')
-    expect(screen.getByText(/REF — · Triggered —/)).toBeTruthy()
-    expect(heading('Snapshot')).toBeTruthy()
-    expect(screen.getByText('No snapshot')).toBeTruthy()
+    expect(screen.getByText(/REF SEC-2026-003-A · Triggered/)).toBeTruthy()
+    expect(heading(/CAM 01 — Main Library snapshot/)).toBeTruthy()
+    expect(screen.getByText('Loading snapshot…')).toBeTruthy()
     expect(screen.getByText(/Detection zone/)).toBeTruthy()
     expect(screen.getByText(/AI confidence/)).toBeTruthy()
     expect(screen.getByText('Automated incident narrative')).toBeTruthy()
@@ -170,29 +182,29 @@ describe('Alert detail', () => {
 
   it('an abandoned bag shows its rows, Resolve, and no carrier comparison', () => {
     inRouter('abandoned_bag')
-    expect(heading('Alert — Abandoned', 1)).toBeTruthy()
+    expect(heading(/^Alert SEC-2026-003-A — Abandoned/, 1)).toBeTruthy()
     expect(screen.getByText('ABANDON_CHECK')).toBeTruthy()
     for (const row of ['Owner', 'Distance', 'Separation', 'Threshold']) {
       expect(screen.getByText(row)).toBeTruthy()
     }
-    expect(screen.getByRole('button', { name: '+ Acknowledge' })).toBeDisabled()
-    expect(screen.getByRole('button', { name: '✓ Resolve' })).toBeDisabled()
-    expect(screen.getByRole('button', { name: 'Mark false alarm' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: '+ Acknowledge' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: '✓ Resolve' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Mark false alarm' })).toBeEnabled()
     expect(screen.queryByRole('button', { name: 'Confirm theft' })).toBeNull()
     expect(screen.queryByText('Is the carrier the owner?')).toBeNull()
   })
 
   it('a possible theft shows the carrier comparison and the theft outcomes', () => {
     inRouter('possible_theft')
-    expect(heading('Alert — Possible theft', 1)).toBeTruthy()
+    expect(heading(/^Alert SEC-2026-004-T — Possible theft/, 1)).toBeTruthy()
     expect(screen.getByText('THEFT_CHECK')).toBeTruthy()
     expect(heading('Is the carrier the owner?')).toBeTruthy()
     expect(screen.getByText(/Appearance match score/)).toBeTruthy()
     for (const row of ['Registered owner', 'Active carrier', 'Owner away', 'Bag movement']) {
       expect(screen.getByText(row)).toBeTruthy()
     }
-    expect(screen.getByRole('button', { name: 'Confirm theft' })).toBeDisabled()
-    expect(screen.getByRole('button', { name: /Authorised pickup/ })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Confirm theft' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: /Authorised pickup/ })).toBeEnabled()
     expect(screen.queryByRole('button', { name: '✓ Resolve' })).toBeNull()
     // The type label is "Possible theft", never a bare "Theft".
     expect(screen.queryByText(/^Theft$/)).toBeNull()

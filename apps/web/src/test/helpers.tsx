@@ -9,6 +9,8 @@ import { clearToken } from '../lib/api/token'
 export interface RecordedCall {
   method: string
   path: string
+  /** Query parameters of the request. */
+  query: URLSearchParams
   body: unknown
   authorization: string | null
 }
@@ -34,6 +36,7 @@ export function mockApi(handler: Handler): RecordedCall[] {
       const call = {
         method: request.method,
         path: new URL(request.url).pathname,
+        query: new URL(request.url).searchParams,
         body,
         authorization: request.headers.get('Authorization'),
       }

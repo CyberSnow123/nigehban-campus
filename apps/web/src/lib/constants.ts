@@ -1,10 +1,9 @@
 import type { components } from './api/schema'
 
-// TODO(phase-07): the OpenAPI schema has no alert enums yet. Replace these two unions with
-// components['schemas'][...] once the alert routes expose them (Data-Contracts §2).
-export type AlertType = 'abandoned_bag' | 'possible_theft'
-export type AlertStatus =
-  'active' | 'acknowledged' | 'resolved' | 'false_alarm' | 'authorised_pickup' | 'confirmed_theft'
+// Generated from the API's OpenAPI schema (Data-Contracts §2); never written by hand.
+export type AlertType = components['schemas']['EventType']
+export type AlertStatus = components['schemas']['AlertStatus']
+export type BagClass = components['schemas']['BagClass']
 
 export type Tone = 'red' | 'pur' | 'amb' | 'grn' | 'gry' | 'blu'
 
@@ -21,6 +20,11 @@ export const STATUS_PILL: Record<AlertStatus, { label: string; tone: Tone }> = {
   false_alarm: { label: 'False alarm', tone: 'gry' },
   authorised_pickup: { label: 'Authorised pickup', tone: 'blu' },
   confirmed_theft: { label: 'Confirmed theft', tone: 'pur' },
+}
+
+export const BAG_LABEL: Record<BagClass, string> = {
+  handbag: 'Handbag',
+  backpack: 'Backpack',
 }
 
 export const ROLE_LABEL: Record<components['schemas']['UserMe']['role'], string> = {

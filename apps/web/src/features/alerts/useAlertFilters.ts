@@ -13,23 +13,30 @@ function pick<T extends string>(allowed: readonly T[], raw: string | null): T {
   return allowed.find((value) => value === raw) ?? allowed[0]!
 }
 
+function pageNumber(raw: string | null): number {
+  const n = Number(raw)
+  return Number.isInteger(n) && n >= 1 ? n : 1
+}
+
 /**
  * Alert list filters, kept in the address (`/alerts?type=possible_theft&status=active&q=bag 31`)
  * so a filtered list can be reloaded, shared and reached from the topbar search.
- * Unknown values fall back to "all".
+ * Unknown values fall back to "all". Changing a filter goes back to page 1.
  */
 export function useAlertFilters() {
   const [params, setParams] = useSearchParams()
   const type = pick(TYPES, params.get('type'))
   const status = pick(STATUSES, params.get('status'))
   const q = params.get('q') ?? ''
+  const page = pageNumber(params.get('page'))
 
   const update = useCallback(
-    (key: 'type' | 'status' | 'q', value: string) => {
+    (key: 'type' | 'status' | 'q' | 'page', value: string) => {
       setParams(
         (previous) => {
           const next = new URLSearchParams(previous)
-          if (value === '' || value === 'all') next.delete(key)
+          if (key !== 'page') next.delete('page')
+          if (value === '' || value === 'all' || (key === 'page' && value === '1')) next.delete(key)
           else next.set(key, value)
           return next
         },
@@ -39,5 +46,5 @@ export function useAlertFilters() {
     [setParams],
   )
 
-  return { type, status, q, update }
+  return { type, status, q, page, update }
 }

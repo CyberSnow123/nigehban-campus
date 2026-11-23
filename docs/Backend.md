@@ -15,7 +15,7 @@ apps/api/
     models/            SQLAlchemy tables (one file per table)
     schemas/           API-only request models; shared shapes import nigehban_contracts
     routers/           auth, alerts, stats, runs, cameras, ingest, settings
-    services/          alert_service (new alert from an event; transitions in Phase 7), ingest_service (event checks, idempotency), run_service (worker runs and status), ref_codes, run_launcher (subprocess, Phase 12), storage (snapshots/frames under DATA_DIR)
+    services/          alert_service (new alert from an event; acknowledge, close), alert_query (list filters, detail, audit trail, snapshot file), ingest_service (event checks, idempotency), run_service (worker runs and status), ref_codes, run_launcher (subprocess, Phase 12), storage (snapshots/frames under DATA_DIR)
     db/locks.py        PostgreSQL advisory locks (event_id, ref_code year)
   alembic/             migrations
   scripts/seed.py      users, cameras, demo alerts (is_demo=true)
@@ -31,12 +31,12 @@ Rule: routers stay thin, and the business rules (transitions, idempotency) live 
 | POST | `/api/auth/forgot-password` | none | `{email}` → always `202 {message}`; emails a reset link if the address is registered |
 | POST | `/api/auth/reset-password` | none | `{token, new_password}` → `200 {message}`; bad or used link → `422` |
 | GET | `/api/stats` | user | dashboard counters |
-| GET | `/api/alerts` | user | filters: `status` (or `open`/`closed`), `type`, `camera_id`, `run_id`, `person` (track id, matches owner or carrier), `q`, `from`, `to`, `is_demo`, `page`, `page_size`. Newest first |
-| GET | `/api/alerts/{id}` | user | alert detail |
-| GET | `/api/alerts/{id}/snapshot` | user | JPEG |
-| GET | `/api/alerts/{id}/actions` | user | audit trail |
-| POST | `/api/alerts/{id}/acknowledge` | user | active → acknowledged |
-| POST | `/api/alerts/{id}/close` | user | `{outcome, note}` → closed status |
+| GET | `/api/alerts` | user | filters: `status` (or `open`/`closed`), `type`, `camera_id`, `run_id`, `person` (track id, matches owner or carrier), `q` (ref code, camera name or location, case-insensitive; a whole number or `#n` also matches bag, owner and carrier track IDs), `from`, `to` (timezone required), `is_demo`, `page` (from 1), `page_size` (default 20, max 100). Newest first (`occurred_at desc, id desc`) → `Page[Alert]`. Unknown keys are ignored; bad values `422` |
+| GET | `/api/alerts/{id}` | user | `Alert` (with `next_statuses`); unknown ID `404` |
+| GET | `/api/alerts/{id}/snapshot` | user | JPEG, `Cache-Control: private, max-age=3600`; missing file `404` |
+| GET | `/api/alerts/{id}/actions` | user | `list[AlertAction]`, oldest first |
+| POST | `/api/alerts/{id}/acknowledge` | user | active → acknowledged → `200 Alert`; any other move `409 INVALID_TRANSITION` |
+| POST | `/api/alerts/{id}/close` | user | `CloseRequest {outcome, note}` → `200 Alert`; outcome not allowed for the type or status `409`; bad body `422` |
 | GET | `/api/cameras` | user | list |
 | POST/PATCH | `/api/cameras[/{id}]` | admin | create or update |
 | GET | `/api/runs` · `/api/runs/{id}` | user | list and detail |
@@ -81,7 +81,7 @@ Column rules (Phase 3, enforced by named check constraints `ck_<table>_<rule>`):
 `ref_code` sequence: per year, counting both types (`SEC-2026-001-A`, `SEC-2026-002-T`, …). `app/services/ref_codes.py` takes a per-year advisory transaction lock, then the highest number used that year + 1, so parallel ingests get distinct numbers; the unique key is the safety net.
 
 ## 5. Behaviour rules
-- **Transitions** are enforced in `alert_service` only, following the table in Data-Contracts §2. Every change writes an `alert_actions` row in the same transaction.
+- **Transitions** are enforced in `alert_service` only, following the table in Data-Contracts §2. The alert row is locked (`SELECT … FOR UPDATE`), the move is checked with `can_transition`, the alert is updated (acknowledge sets `acknowledged_by`/`acknowledged_at`, close sets `closed_at`; closing straight from `active` is allowed) and one `alert_actions` row is written, all in one transaction. Two operators acting at once: the second gets `409`. Closed alerts cannot be reopened. Reads and the contract mapping (`to_alert`, `next_statuses`) live in `services/alert_query.py`.
 - **Ingest idempotency:** the event service takes an advisory lock on the `event_id`, then looks it up: a known one returns `200 {duplicate:true}` with the first alert's ID, even after the run has ended. Parallel retries run one after the other. A unique-violation on `event_id` (safety net) is also answered as a duplicate, and the file is kept because it belongs to the first alert.
 - **Ingest validation** (Data-Contracts §4, in order): `event` parses as a `DetectionEvent`; duplicate check; the run exists (`404`) and is `running` (`409 RUN_NOT_RUNNING`); `camera_id` and `source` equal the run's (`422`: a mock run can never produce a real alert); the snapshot starts with `FF D8 FF` and is at most 2 MB (read in chunks, stops early). `is_demo` is copied from the run. The snapshot is written first (temp file + `os.replace`) to `snapshots/{run_id}/{event_id}.jpg`; if the insert or commit fails, the file is deleted.
 - **Run status:** `run_service.apply_status` locks the run row, checks `can_update_run`, overwrites `frames_processed`, `fps` (kept when sent as `null`) and `message`, sets `started_at` on the first `running` and `ended_at` on a terminal status.

@@ -144,7 +144,7 @@
 **Verification:** API tests cover every allowed and disallowed transition. Browser: ingest a fake event, see it in Alerts, acknowledge it, close it as `false_alarm`, and see the timeline.
 **Acceptance:** [ ] "Possible theft" wording everywhere · [ ] outcomes offered depend on type · [ ] audit row for every action.
 **Depends on:** 5, 6.
-**Carried from Phase 5 (decide in this phase):** gap 4 (the prototype's "Reopen alert" conflicts with terminal closed statuses: add `closed → active` or leave it out) and the `AlertType` / `AlertStatus` unions in `lib/constants.ts` (switch to the generated types).
+**Carried from Phase 5 (decided in Phase 7):** gap 4, "Reopen alert": left out, closed statuses stay terminal. The `AlertType` / `AlertStatus` unions in `lib/constants.ts` now use the generated types.
 
 ### Phase 8: Dashboard, History, Person, polling
 **Objective:** Complete the read-side screens and make them live with 3 s polling.

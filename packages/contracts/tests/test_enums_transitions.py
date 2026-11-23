@@ -11,6 +11,7 @@ from nigehban_contracts import (
     RunStatus,
     allowed_outcomes,
     can_transition,
+    next_statuses,
 )
 
 ANY_OUTCOMES = {AlertStatus.RESOLVED, AlertStatus.FALSE_ALARM}
@@ -75,3 +76,22 @@ def test_allowed_outcomes_by_type():
 def test_can_transition_accepts_plain_strings():
     assert can_transition("possible_theft", "active", "confirmed_theft")
     assert not can_transition("abandoned_bag", "active", "confirmed_theft")
+
+
+@pytest.mark.parametrize(("event_type", "status"), list(itertools.product(EventType, AlertStatus)))
+def test_next_statuses_match_the_table_in_a_fixed_order(event_type, status):
+    order = ["acknowledged", "resolved", "false_alarm", "authorised_pickup", "confirmed_theft"]
+    result = next_statuses(event_type, status)
+    assert set(result) == ALLOWED_TRANSITIONS[(event_type, status)]
+    assert [s.value for s in result] == [s for s in order if s in result]
+
+
+def test_next_statuses_examples():
+    assert next_statuses("abandoned_bag", "active") == ["acknowledged", "resolved", "false_alarm"]
+    assert next_statuses("possible_theft", "acknowledged") == [
+        "resolved",
+        "false_alarm",
+        "authorised_pickup",
+        "confirmed_theft",
+    ]
+    assert next_statuses("possible_theft", "resolved") == []
