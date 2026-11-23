@@ -1,5 +1,5 @@
 # Phase 08: Dashboard, History, Person, polling
-Branch: `feature/phase-08-dashboard-history-person` (from `main`, which contains Phase 7) · Status: done (awaiting owner review/merge; decisions 1-4 approved 2026-11-23) · Owner: Farooq khan
+Branch: `feature/phase-08-dashboard-history-person` (from `main`, which contains Phase 7) · Status: done, merged into `main` on 2026-11-23 with the owner's approval (decisions 1-4 approved 2026-11-23) · Owner: Farooq khan
 
 ## Goal
 Finish the read-side screens and make them live with 3 s polling (D-09). The Dashboard, History and Person pages built in Phase 5 get real API data, and a new alert shows a toast, the sidebar badge and an optional sound within about 3 s, without a reload. Nothing in the pages' layout changes, except for the History bar additions in decision 4.
