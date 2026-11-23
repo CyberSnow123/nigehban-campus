@@ -1,12 +1,13 @@
-import { Link, useLocation } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 
 import { cx } from '../lib/cx'
-import { NAV_ITEMS, navKeyFor } from './navItems'
+import { NAV_ITEMS } from './navItems'
+import { useActiveNavKey } from './useActiveNavKey'
 import type { ShellStatus } from './useShellStatus'
 
 /** Bottom tabs, shown under 760 px in place of the sidebar. */
 export function MobileTabBar({ status }: { status: ShellStatus }) {
-  const active = navKeyFor(useLocation().pathname)
+  const active = useActiveNavKey()
   return (
     <nav
       aria-label="Main"

@@ -65,6 +65,15 @@ class CloseRequest(ContractModel):
         return value
 
 
+class LatestAlert(ContractModel):
+    """The newest alert, so the web app can spot a new one between polls."""
+
+    id: AlertId
+    ref_code: RefCode
+    type: EventType
+    camera_name: str
+
+
 class Stats(ContractModel):
     open_total: NonNegInt
     active: NonNegInt
@@ -73,3 +82,12 @@ class Stats(ContractModel):
     today_theft: NonNegInt
     closed_today: NonNegInt
     running_runs: NonNegInt
+    latest_alert: LatestAlert | None = None
+
+
+class HistoryStats(ContractModel):
+    """Closed alerts in a date range: how many, how many false alarms, mean response time."""
+
+    total: NonNegInt
+    false_alarms: NonNegInt
+    avg_response_s: NonNegFloat | None = None

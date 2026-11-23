@@ -15,6 +15,7 @@ dependencies = [
   "argon2-cffi",
   "python-multipart",
   "slowapi>=0.1.10",
+  "tzdata>=2026.6",
 ]
 
 [tool.uv.sources]

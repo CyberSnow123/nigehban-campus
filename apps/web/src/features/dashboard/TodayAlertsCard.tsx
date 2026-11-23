@@ -1,17 +1,27 @@
 import { Card, CardBody, CardHeader } from '../../components/Card'
 import { Donut } from '../../components/charts'
+import { NO_VALUE } from '../../lib/constants'
+import { useStats } from '../stats/api'
 
-/** Today's alerts by status. Counts come from `/api/stats` in Phase 8; until then all are 0. */
+/**
+ * The shift view (phase-08 decision 8): everything still open, plus what was closed today.
+ * Zeros and a dash total until the counters load.
+ */
 export function TodayAlertsCard() {
+  const stats = useStats().data
+  const active = stats?.active ?? 0
+  const acknowledged = stats?.acknowledged ?? 0
+  const resolved = stats?.closed_today ?? 0
+  const total = stats ? `${active + acknowledged + resolved} total` : `${NO_VALUE} total`
   return (
     <Card>
-      <CardHeader title="Today's alerts" aside={<span className="font-mono">0 total</span>} />
+      <CardHeader title="Today's alerts" aside={<span className="font-mono">{total}</span>} />
       <CardBody>
         <Donut
           segments={[
-            { label: 'Active', value: 0, color: 'var(--red)' },
-            { label: 'Acknowledged', value: 0, color: 'var(--org)' },
-            { label: 'Resolved', value: 0, color: 'var(--color-live)' },
+            { label: 'Active', value: active, color: 'var(--red)' },
+            { label: 'Acknowledged', value: acknowledged, color: 'var(--org)' },
+            { label: 'Resolved', value: resolved, color: 'var(--color-live)' },
           ]}
         />
       </CardBody>

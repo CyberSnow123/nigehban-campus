@@ -14,10 +14,10 @@ nigehban-campus/
 │
 ├─ apps/
 │  ├─ web/                   React app → docs/Frontend.md
-│  │  ├─ src/{app,components,layout,features,lib,styles}   (features/*/ hold a page plus its section components)
+│  │  ├─ src/{app,components,layout,features,lib,styles}   (features/*/ hold a page plus its section components; features/stats: shared counter queries; lib/api/query.ts: shared query helpers)
 │  │  ├─ package.json  vite.config.ts  tsconfig.json  eslint.config.js
 │  └─ api/                   FastAPI → docs/Backend.md
-│     ├─ app/{core,db,models,schemas,routers,services,seed}   (seed/assets: demo placeholder JPEG; db/locks.py: advisory locks; services/{storage,run_service,ingest_service,alert_service,alert_query}.py; schemas/alerts.py: list filters)
+│     ├─ app/{core,db,models,schemas,routers,services,seed}   (seed/assets: demo placeholder JPEG; db/locks.py: advisory locks; services/{storage,run_service,ingest_service,alert_service,alert_query,alert_search,stats_service}.py; schemas/alerts.py: list filters; schemas/stats.py: history range; routers/stats.py)
 │     ├─ alembic.ini  alembic/versions/  scripts/{seed,set_user_email,export_openapi,post_fake_event}.py  tests/
 │     └─ pyproject.toml
 │

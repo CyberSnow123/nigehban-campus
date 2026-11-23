@@ -3,6 +3,7 @@
 from functools import lru_cache
 from pathlib import Path
 from typing import Literal
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import limits
 from pydantic import SecretStr, field_validator, model_validator
@@ -41,6 +42,22 @@ class Settings(BaseSettings):
     # Login rate limit, counted per client IP address (in memory, so per server process).
     rate_limit_enabled: bool = True
     login_rate_limit: str = "10/minute"  # "<count>/<second|minute|hour>"
+
+    # "Today" for the dashboard counters runs midnight to midnight here (Data-Contracts §5).
+    campus_timezone: str = "Asia/Karachi"
+
+    @field_validator("campus_timezone")
+    @classmethod
+    def _known_timezone(cls, value: str) -> str:
+        try:
+            ZoneInfo(value)
+        except (ZoneInfoNotFoundError, ValueError) as exc:
+            raise ValueError('use an IANA timezone name, for example "Asia/Karachi"') from exc
+        return value
+
+    @property
+    def campus_tz(self) -> ZoneInfo:
+        return ZoneInfo(self.campus_timezone)
 
     @field_validator("jwt_secret", "worker_key")
     @classmethod

@@ -9,7 +9,7 @@ import { COL, TWO_COL } from '../../layout/grids'
 import { usePageTitle } from '../../lib/usePageTitle'
 import { AlertDetailsCard } from './AlertDetailsCard'
 import { AlertTimeline } from './AlertTimeline'
-import { ApiFailure, useAlert, type Alert } from './api'
+import { ApiFailure, isClosed, useAlert, type Alert } from './api'
 import { CarrierCompareCard } from './CarrierCompareCard'
 import { formatDateTime } from './format'
 import { narrative } from './narrative'
@@ -23,9 +23,12 @@ import { SnapshotCard } from './SnapshotCard'
 export function AlertDetailView({ alert }: { alert?: Alert }) {
   const title = alert ? `Alert ${alert.ref_code} — ${TYPE_PILL[alert.type].label}` : 'Alert'
   usePageTitle(alert ? `Alert ${alert.ref_code}` : 'Alert')
+  const closed = alert !== undefined && isClosed(alert)
   return (
     <>
-      <BackLink to="/alerts">Back to Alerts</BackLink>
+      <BackLink to={closed ? '/history' : '/alerts'}>
+        {closed ? 'Back to History' : 'Back to Alerts'}
+      </BackLink>
       <PageHeader
         title={title}
         badge={
@@ -76,6 +79,7 @@ function AlertLoadError({ error }: { error: Error }) {
 export default function AlertDetailPage() {
   const { id = '' } = useParams<{ id: string }>()
   const query = useAlert(id)
-  if (query.isError) return <AlertLoadError error={query.error} />
+  // A failed poll keeps the alert on screen; only a failed first load shows the error.
+  if (query.isError && !query.data) return <AlertLoadError error={query.error} />
   return <AlertDetailView alert={query.data} />
 }

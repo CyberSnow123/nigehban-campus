@@ -120,7 +120,11 @@ A status post, frame or event for a run that cannot take it is `409 RUN_NOT_RUNN
 
 **User (me)**: `{ "id", "username", "display_name", "role" }`
 
-**Stats** (dashboard): `{ "open_total", "active", "acknowledged", "today_abandoned", "today_theft", "closed_today", "running_runs" }`
+**Stats** (dashboard, `GET /api/stats`): `{ "open_total", "active", "acknowledged", "today_abandoned", "today_theft", "closed_today", "running_runs", "latest_alert" }`
+- "Today" runs from midnight to midnight in the API's `campus_timezone` (default `Asia/Karachi`). `today_abandoned` and `today_theft` count alerts by `occurred_at`; `closed_today` counts by `closed_at`. `open_total`, `active` and `acknowledged` count every open alert, whatever its date. Demo alerts are counted.
+- `latest_alert` is the alert the API stored last (`created_at desc, id desc`; not `occurred_at`, because events from recorded footage can carry an older time) as `{ "id": "alt_…", "ref_code": "SEC-2026-012-T", "type": "possible_theft", "camera_name": "CAM 03" }`, or `null` when there is none. The web app shows a new-alert toast when its `id` changes (added in Phase 8).
+
+**HistoryStats** (History tiles, `GET /api/stats/history?days=1|7|30&type=`): `{ "total": 14, "false_alarms": 3, "avg_response_s": 130.0 }`. These count **closed** alerts whose `occurred_at` is in the last `days` days (default 7), optionally of one `type`. **Response** is the time from `created_at` to the first operator action: `acknowledged_at`, or `closed_at` for an alert closed straight from `active`. `avg_response_s` is their mean in seconds, or `null` when no alert is in the range (added in Phase 8).
 
 ## 6. Common API shapes
 - **Page:** `{ "items": [...], "total": 42, "page": 1, "page_size": 20 }`

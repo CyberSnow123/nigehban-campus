@@ -22,7 +22,17 @@ class AlertListQuery(BaseModel):
     camera_id: CameraId | None = None
     run_id: RunId | None = None
     person: Annotated[int | None, Field(ge=0, description="Track ID, owner or carrier")] = None
-    q: Annotated[str | None, Field(max_length=100)] = None
+    q: Annotated[
+        str | None,
+        Field(
+            max_length=100,
+            description=(
+                "`person 12` / `P12` (owner or carrier), `bag 31` / `Handbag #31`, "
+                "a number `12` (any track), `theft` / `abandoned`, or part of the ref code, "
+                "camera name or location"
+            ),
+        ),
+    ] = None
     from_: Annotated[AwareDatetime | None, Field(alias="from")] = None
     to: AwareDatetime | None = None
     is_demo: bool | None = None

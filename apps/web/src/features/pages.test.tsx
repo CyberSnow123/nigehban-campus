@@ -6,7 +6,8 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { Providers } from '../app/providers'
 import { setToken } from '../lib/api/token'
 import { makeAlert, page } from '../test/alerts'
-import { OPERATOR, mockApi, renderApp, reply, resetAuthState } from '../test/helpers'
+import type { Alert } from './alerts/api'
+import { emptyApi, mockApi, renderApp, reply, resetAuthState } from '../test/helpers'
 import { AlertDetailView } from './alerts/AlertDetailPage'
 
 /**
@@ -18,13 +19,14 @@ import { AlertDetailView } from './alerts/AlertDetailPage'
 beforeEach(resetAuthState)
 afterEach(resetAuthState)
 
-async function openSignedIn(path: string) {
+async function openSignedIn(path: string, alerts: Alert[] = []) {
   setToken('stored.jwt.token', false)
-  mockApi(({ path: url }) => {
-    if (url === '/api/alerts') return reply(200, page([]))
+  mockApi((call) => {
+    const url = call.path
+    if (url === '/api/alerts') return reply(200, page(alerts))
     // An alert detail that never arrives: the page stays in its loading layout.
     if (url.startsWith('/api/alerts/')) return new Promise<never>(() => {})
-    return reply(200, OPERATOR)
+    return emptyApi(call)
   })
   const router = renderApp(path)
   await screen.findByRole('main')
@@ -67,8 +69,10 @@ describe('Dashboard', () => {
     for (const label of ['Active cameras', 'People tracked', 'Bags tracked', 'Active alerts']) {
       expect(screen.getByText(label)).toBeTruthy()
     }
-    // No source yet: each tile says so instead of showing a number.
-    expect(screen.getAllByRole('img', { name: 'Not available yet' })).toHaveLength(4)
+    expect(await screen.findByText('No active alerts. Everything is with its owner.')).toBeTruthy()
+    // Active alerts comes from /api/stats; the other three have no source yet and say so.
+    expect(screen.getAllByRole('img', { name: 'Not available yet' })).toHaveLength(3)
+    expect(screen.getByText('All clear')).toBeTruthy()
     expect(heading('Camera preview')).toBeTruthy()
     expect(screen.getByRole('link', { name: 'Open live view' })).toHaveAttribute('href', '/live')
     expect(heading('Current target')).toBeTruthy()
@@ -76,7 +80,6 @@ describe('Dashboard', () => {
       expect(screen.getAllByText(label).length).toBeGreaterThan(0)
     }
     expect(screen.getByRole('progressbar', { name: 'Alert threshold progress' })).toBeTruthy()
-    expect(screen.getByText('No active alerts. Everything is with its owner.')).toBeTruthy()
     expect(heading("Today's alerts")).toBeTruthy()
     for (const label of ['Active', 'Acknowledged', 'Resolved']) {
       expect(screen.getAllByText(label).length).toBeGreaterThan(0)
@@ -220,11 +223,13 @@ describe('Alert detail', () => {
 
 describe('Person', () => {
   it('has the sighting, the profile, the privacy note and the alerts table', async () => {
-    await openSignedIn('/runs/run_01/person/7')
+    // A person page exists once an alert names the track.
+    await openSignedIn('/runs/run_01/person/7', [makeAlert({ owner_track_id: 7 })])
+    expect(await screen.findByText('Bag owner')).toBeTruthy()
     expect(heading(/^Person #7/, 1)).toBeTruthy()
     expect(screen.getByText('P-07')).toBeTruthy()
     expect(screen.getByRole('link', { name: /Back to Alerts/ })).toBeTruthy()
-    expect(heading('Last seen')).toBeTruthy()
+    expect(heading('Last seen on CAM 01 — Main Library')).toBeTruthy()
     expect(screen.getByRole('link', { name: 'Track in Live Monitoring' })).toBeTruthy()
     expect(heading('Profile')).toBeTruthy()
     for (const row of ['Status', 'Last seen', 'Camera', 'Location', 'Linked bags']) {
@@ -237,9 +242,14 @@ describe('Person', () => {
     ).toBeTruthy()
     expect(heading('Alerts involving Person #7')).toBeTruthy()
     expect(columnHeaders()).toEqual(['Alert', 'Type', 'Role', 'Bag', 'When', 'Status', 'Action'])
-    expect(
-      screen.getByText('No alerts involve this person. They are only being tracked.'),
-    ).toBeTruthy()
+    expect(screen.getByText('1 found')).toBeTruthy()
+  })
+
+  it('shows the unknown-person card when no alert in the run names the track', async () => {
+    await openSignedIn('/runs/run_01/person/7')
+    expect(await screen.findByText(/No alert in this run involves this person/)).toBeTruthy()
+    expect(heading('Person #7', 1)).toBeTruthy()
+    expect(screen.queryByText('Profile')).toBeNull()
   })
 
   it.each(['abc', '0', '-3', '12x'])('shows an unknown-person card for track "%s"', async (id) => {
@@ -270,7 +280,8 @@ describe('History', () => {
       'Outcome',
       'Action',
     ])
-    expect(screen.getByText('No records for this filter.')).toBeTruthy()
+    expect(await screen.findByText('No records for this filter.')).toBeTruthy()
+    expect(screen.getByRole('combobox', { name: 'Outcome' })).toHaveValue('all')
     expect(screen.getByText(/Showing/)).toHaveTextContent('Showing 0 of 0 records')
     expect(screen.getByRole('button', { name: 'Previous' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled()
@@ -296,11 +307,17 @@ describe('Settings', () => {
     for (const label of [
       'Alert when a non-owner carries a bag',
       'Allow authorised pickup by staff',
-      'Alert sound',
       'Email alerts',
     ]) {
       expect(screen.getByRole('switch', { name: label })).toBeDisabled()
     }
+    // The alert sound is a local preference and works now (on by default, as in the prototype).
+    const sound = screen.getByRole('switch', { name: 'Alert sound' })
+    expect(sound).toBeEnabled()
+    expect(sound).toBeChecked()
+    await user.click(sound)
+    expect(sound).not.toBeChecked()
+    expect(localStorage.getItem('nigehban-alert-sound')).toBe('off')
     expect(screen.getByText('No cameras added yet.')).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Save changes' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Reset to defaults' })).toBeDisabled()

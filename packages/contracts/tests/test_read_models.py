@@ -7,6 +7,7 @@ from nigehban_contracts import (
     CloseRequest,
     ErrorBody,
     ErrorCode,
+    HistoryStats,
     Page,
     Run,
     RunStatus,
@@ -24,6 +25,7 @@ EXAMPLE_MODELS = [
     ("camera", Camera),
     ("user_me", UserMe),
     ("stats", Stats),
+    ("history_stats", HistoryStats),
     ("error", ErrorBody),
     ("close_request", CloseRequest),
     ("run_status", RunStatusUpdate),
@@ -89,6 +91,35 @@ def test_stats_rejects_negative_counts(example):
     payload["active"] = -1
     with pytest.raises(ValidationError):
         Stats.model_validate(payload)
+
+
+def test_stats_latest_alert_is_optional(example):
+    payload = example("stats")
+    payload["latest_alert"] = None
+    assert Stats.model_validate(payload).latest_alert is None
+    del payload["latest_alert"]
+    assert Stats.model_validate(payload).latest_alert is None
+
+
+def test_stats_latest_alert_needs_a_real_id(example):
+    payload = example("stats")
+    payload["latest_alert"]["id"] = "run_01JD2Y5K3M9QZ8V7T6R4N2B1CD"
+    with pytest.raises(ValidationError):
+        Stats.model_validate(payload)
+
+
+def test_history_stats_average_may_be_empty(example):
+    payload = example("history_stats")
+    payload["avg_response_s"] = None
+    assert HistoryStats.model_validate(payload).avg_response_s is None
+
+
+@pytest.mark.parametrize(("field", "value"), [("total", -1), ("avg_response_s", -0.5)])
+def test_history_stats_rejects_negatives(example, field, value):
+    payload = example("history_stats")
+    payload[field] = value
+    with pytest.raises(ValidationError):
+        HistoryStats.model_validate(payload)
 
 
 def test_error_body_example_and_unknown_code(example):

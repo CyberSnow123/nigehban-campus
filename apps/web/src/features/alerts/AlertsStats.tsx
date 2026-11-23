@@ -6,9 +6,9 @@ import { useAlertCount } from './api'
 /** Counts by status, from the list's `total` (phase-07 decision 7). A dash while loading. */
 export function AlertsStats() {
   const total = useAlertCount()
-  const active = useAlertCount('active')
-  const acknowledged = useAlertCount('acknowledged')
-  const resolved = useAlertCount('resolved')
+  const active = useAlertCount({ status: 'active' })
+  const acknowledged = useAlertCount({ status: 'acknowledged' })
+  const resolved = useAlertCount({ status: 'resolved' })
   return (
     <div className={GRID_4}>
       <StatTile label="Total alerts" value={total} icon={<AlertIcon className="size-5" />} />

@@ -1,6 +1,14 @@
 """Shared Pydantic contracts for Nigehban Campus. Source of truth: docs/Data-Contracts.md."""
 
-from nigehban_contracts.alerts import Alert, AlertAction, CameraRef, CloseRequest, Stats
+from nigehban_contracts.alerts import (
+    Alert,
+    AlertAction,
+    CameraRef,
+    CloseRequest,
+    HistoryStats,
+    LatestAlert,
+    Stats,
+)
 from nigehban_contracts.common import ErrorBody, ErrorDetail, Page, UserMe, UserRef
 from nigehban_contracts.config import (
     AbandonConfig,
@@ -66,9 +74,11 @@ __all__ = [
     "ErrorDetail",
     "EventSource",
     "EventType",
+    "HistoryStats",
     "IdPrefix",
     "IngestEventResponse",
     "IngestRunCreate",
+    "LatestAlert",
     "OutputConfig",
     "Page",
     "Run",
