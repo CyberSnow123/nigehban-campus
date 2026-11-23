@@ -1419,6 +1419,175 @@
           }
         }
       }
+    },
+    "/api/stats": {
+      "get": {
+        "tags": [
+          "stats"
+        ],
+        "summary": "Get Stats",
+        "description": "Open alerts, today's alerts in the campus timezone, running runs and the newest alert.",
+        "operationId": "get_stats_api_stats_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Stats"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many attempts from this address",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Request is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/stats/history": {
+      "get": {
+        "tags": [
+          "stats"
+        ],
+        "summary": "Get History Stats",
+        "description": "Closed alerts in the last ``days`` days: count, false alarms and mean response time.",
+        "operationId": "get_history_stats_api_stats_history_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "description": "Range: the last 1, 7 or 30 days",
+              "enum": [
+                1,
+                7,
+                30
+              ],
+              "default": 7,
+              "title": "Days"
+            },
+            "description": "Range: the last 1, 7 or 30 days"
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/EventType"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Type"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HistoryStats"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many attempts from this address",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Request is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1935,6 +2104,40 @@
         ],
         "title": "HealthResponse"
       },
+      "HistoryStats": {
+        "properties": {
+          "total": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Total"
+          },
+          "false_alarms": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "False Alarms"
+          },
+          "avg_response_s": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avg Response S"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "total",
+          "false_alarms"
+        ],
+        "title": "HistoryStats",
+        "description": "Closed alerts in a date range: how many, how many false alarms, mean response time."
+      },
       "IngestEventResponse": {
         "properties": {
           "alert_id": {
@@ -1980,6 +2183,37 @@
         ],
         "title": "IngestRunCreate",
         "description": "A standalone worker registers its own run. ``camera`` is the camera's unique name."
+      },
+      "LatestAlert": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^alt_[0-9A-HJKMNP-TV-Z]{26}$",
+            "title": "Id"
+          },
+          "ref_code": {
+            "type": "string",
+            "pattern": "^SEC-\\d{4}-\\d{3,}-[AT]$",
+            "title": "Ref Code"
+          },
+          "type": {
+            "$ref": "#/components/schemas/EventType"
+          },
+          "camera_name": {
+            "type": "string",
+            "title": "Camera Name"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "ref_code",
+          "type",
+          "camera_name"
+        ],
+        "title": "LatestAlert",
+        "description": "The newest alert, so the web app can spot a new one between polls."
       },
       "LoginRequest": {
         "properties": {
@@ -2251,6 +2485,67 @@
         ],
         "title": "RunStatusUpdate",
         "description": "Heartbeat a worker posts. ``queued`` is API-only, so it is rejected here."
+      },
+      "Stats": {
+        "properties": {
+          "open_total": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Open Total"
+          },
+          "active": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Active"
+          },
+          "acknowledged": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Acknowledged"
+          },
+          "today_abandoned": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Today Abandoned"
+          },
+          "today_theft": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Today Theft"
+          },
+          "closed_today": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Closed Today"
+          },
+          "running_runs": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Running Runs"
+          },
+          "latest_alert": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LatestAlert"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "open_total",
+          "active",
+          "acknowledged",
+          "today_abandoned",
+          "today_theft",
+          "closed_today",
+          "running_runs"
+        ],
+        "title": "Stats"
       },
       "UserMe": {
         "properties": {

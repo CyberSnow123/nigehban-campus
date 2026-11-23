@@ -158,7 +158,7 @@
 **Verification:** posting a fake event makes the dashboard counters and toast update within about 3 s without a reload.
 **Acceptance:** [ ] every prototype view except Live and Settings is functional on real API data.
 **Depends on:** 7.
-**Carried from Phase 5 (decide in this phase):** gap 1 (People/Bags tracked tiles have no field in `Stats`) and gap 5 (Average response on History). Feed `useShellStatus()` (`layout/useShellStatus.ts`) from `['stats']`.
+**Carried from Phase 5 (decided in Phase 8):** gap 5, "Average response": `HistoryStats.avg_response_s` from `GET /api/stats/history`. Gap 1 (People/Bags tracked) deferred to Phase 12 with gap 2. `useShellStatus()` now reads `['stats']` (open alerts and `hasLiveRun` from `running_runs`).
 
 ### Phase 9: CV worker skeleton and mock source
 **Objective:** `nigehban-cv run --source mock` plays a scenario against a real video and feeds the API.
@@ -213,7 +213,7 @@
 **Verification:** starting a run from the UI shows the live frame and alerts arriving. Stop works. A changed threshold applies on the next run.
 **Acceptance:** [ ] full operator flow without a terminal · [ ] video paths are restricted to `data/videos`.
 **Depends on:** 8, 11.
-**Carried from Phase 5 (decide in this phase):** gap 2 (live tracking state for the dashboard "Current target", the Live inspector and the feed footer), gap 6 (the two theft-check switches have no `config.json` key) and gap 7 (Email alerts switch). Settings controls are built and disabled; enable them here. Feed `hasLiveRun` in `useShellStatus()`.
+**Carried from Phase 5 (decide in this phase):** gap 1 (People/Bags tracked tiles and feed chips, deferred from Phase 8), gap 2 (live tracking state for the dashboard "Current target", the Live inspector and the feed footer), gap 6 (the two theft-check switches have no `config.json` key) and gap 7 (Email alerts switch). Settings controls are built and disabled; enable them here. (`hasLiveRun` is already fed from `stats.running_runs` since Phase 8.)
 
 ### Phase 13: Dataset tooling and coverage (parallel track)
 **Objective:** An organised, documented ~150-clip dataset with evidence of its coverage.

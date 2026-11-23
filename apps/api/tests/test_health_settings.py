@@ -1,6 +1,8 @@
 from pathlib import Path
 
+import pytest
 from fastapi.testclient import TestClient
+from pydantic import ValidationError
 from sqlalchemy import Engine
 
 from app.core.security import hash_password, verify_password
@@ -55,6 +57,13 @@ def test_secrets_hidden_in_repr():
     s = Settings(_env_file=None, **REQUIRED)
     assert str(s.jwt_secret) != "j" * 32 and s.jwt_secret.get_secret_value() == "j" * 32
     assert "worker_key=SecretStr('**********')" in repr(s)
+
+
+def test_campus_timezone_default_and_check():
+    s = Settings(_env_file=None, **REQUIRED)
+    assert s.campus_timezone == "Asia/Karachi" and str(s.campus_tz) == "Asia/Karachi"
+    with pytest.raises(ValidationError, match="IANA timezone"):
+        Settings(_env_file=None, campus_timezone="Mars/Olympus", **REQUIRED)
 
 
 def test_password_hashing():

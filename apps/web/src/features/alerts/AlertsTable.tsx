@@ -5,10 +5,10 @@ import { Card } from '../../components/Card'
 import { SelectField } from '../../components/controls'
 import { RefreshIcon } from '../../components/icons'
 import { Pager } from '../../components/Pager'
-import { Pill } from '../../components/Pill'
 import { Table, type Column } from '../../components/Table'
 import { alertRow } from './alertRows'
 import { useAlerts } from './api'
+import { SearchNotePill } from './SearchNotePill'
 import { TypeFilter } from './TypeFilter'
 import { useAlertFilters, type StatusFilterValue } from './useAlertFilters'
 
@@ -53,19 +53,7 @@ export function AlertsTable() {
       <div className="flex flex-wrap items-center justify-between gap-2.5 border-b border-line px-5 py-3.5">
         <TypeFilter value={type} onChange={(value) => update('type', value)} />
         <div className="flex flex-wrap items-center gap-2.5">
-          {q && (
-            <Pill tone="blu">
-              Search: {q}
-              <button
-                type="button"
-                aria-label="Clear search"
-                onClick={() => update('q', '')}
-                className="font-bold"
-              >
-                ×
-              </button>
-            </Pill>
-          )}
+          <SearchNotePill q={q} onClear={() => update('q', '')} />
           <SelectField
             label="Status"
             value={status}
@@ -91,7 +79,7 @@ export function AlertsTable() {
         columns={COLUMNS}
         rows={data?.items.map(alertRow) ?? []}
         loading={alerts.isPending}
-        error={alerts.isError ? alerts.error.message : undefined}
+        error={alerts.isError && !data ? alerts.error.message : undefined}
         emptyText={filtered ? 'No alerts match these filters.' : 'No alerts yet.'}
       />
       {data && pageCount > 1 && (

@@ -1,3 +1,5 @@
+import { useStats } from '../features/stats/api'
+
 export interface ShellStatus {
   /** Alerts waiting for an operator. 0 hides the badges and the bell dot. */
   openAlerts: number
@@ -6,10 +8,13 @@ export interface ShellStatus {
 }
 
 /**
- * The one place the shell gets its live numbers from. Nothing feeds it yet, so the shell shows
- * no badges instead of invented ones (D-06).
- * TODO(phase-08): read `openAlerts` from the `['stats']` query. TODO(phase-12): `hasLiveRun`.
+ * The shell's live numbers, from the shared `['stats']` poll. Until it loads (or if it fails)
+ * both are off, so the shell shows no badge instead of an invented one (D-06).
  */
 export function useShellStatus(): ShellStatus {
-  return { openAlerts: 0, hasLiveRun: false }
+  const stats = useStats().data
+  return {
+    openAlerts: stats?.open_total ?? 0,
+    hasLiveRun: (stats?.running_runs ?? 0) > 0,
+  }
 }

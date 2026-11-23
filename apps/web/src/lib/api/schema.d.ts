@@ -287,6 +287,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Stats
+         * @description Open alerts, today's alerts in the campus timezone, running runs and the newest alert.
+         */
+        get: operations["get_stats_api_stats_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/stats/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get History Stats
+         * @description Closed alerts in the last ``days`` days: count, false alarms and mean response time.
+         */
+        get: operations["get_history_stats_api_stats_history_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -468,6 +508,18 @@ export interface components {
              */
             database: "connected" | "disconnected";
         };
+        /**
+         * HistoryStats
+         * @description Closed alerts in a date range: how many, how many false alarms, mean response time.
+         */
+        HistoryStats: {
+            /** Total */
+            total: number;
+            /** False Alarms */
+            false_alarms: number;
+            /** Avg Response S */
+            avg_response_s?: number | null;
+        };
         /** IngestEventResponse */
         IngestEventResponse: {
             /** Alert Id */
@@ -485,6 +537,19 @@ export interface components {
             source: components["schemas"]["EventSource"];
             /** Video Path */
             video_path: string;
+        };
+        /**
+         * LatestAlert
+         * @description The newest alert, so the web app can spot a new one between polls.
+         */
+        LatestAlert: {
+            /** Id */
+            id: string;
+            /** Ref Code */
+            ref_code: string;
+            type: components["schemas"]["EventType"];
+            /** Camera Name */
+            camera_name: string;
         };
         /** LoginRequest */
         LoginRequest: {
@@ -573,6 +638,24 @@ export interface components {
             fps?: number | null;
             /** Message */
             message?: string | null;
+        };
+        /** Stats */
+        Stats: {
+            /** Open Total */
+            open_total: number;
+            /** Active */
+            active: number;
+            /** Acknowledged */
+            acknowledged: number;
+            /** Today Abandoned */
+            today_abandoned: number;
+            /** Today Theft */
+            today_theft: number;
+            /** Closed Today */
+            closed_today: number;
+            /** Running Runs */
+            running_runs: number;
+            latest_alert?: components["schemas"]["LatestAlert"] | null;
         };
         /** UserMe */
         UserMe: {
@@ -1566,6 +1649,122 @@ export interface operations {
             };
             /** @description Move not allowed (INVALID_TRANSITION) */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Request is not valid */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Too many attempts from this address */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    get_stats_api_stats_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Stats"];
+                };
+            };
+            /** @description Missing, invalid or expired token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Not allowed for this role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Request is not valid */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Too many attempts from this address */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    get_history_stats_api_stats_history_get: {
+        parameters: {
+            query?: {
+                /** @description Range: the last 1, 7 or 30 days */
+                days?: 1 | 7 | 30;
+                type?: components["schemas"]["EventType"] | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HistoryStats"];
+                };
+            };
+            /** @description Missing, invalid or expired token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Not allowed for this role */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

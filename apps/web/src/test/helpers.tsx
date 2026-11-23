@@ -62,6 +62,31 @@ export const OPERATOR = {
   role: 'operator',
 } as const
 
+export const EMPTY_STATS = {
+  open_total: 0,
+  active: 0,
+  acknowledged: 0,
+  today_abandoned: 0,
+  today_theft: 0,
+  closed_today: 0,
+  running_runs: 0,
+  latest_alert: null,
+}
+
+/**
+ * The signed-in shell polls `/api/stats`, and the pages load lists. This answers those with
+ * empty data, and anything else with the logged-in user.
+ */
+export function emptyApi(call: RecordedCall): MockReply {
+  if (call.path === '/api/stats') return reply(200, EMPTY_STATS)
+  if (call.path === '/api/stats/history') {
+    return reply(200, { total: 0, false_alarms: 0, avg_response_s: null })
+  }
+  if (call.path === '/api/alerts')
+    return reply(200, { items: [], total: 0, page: 1, page_size: 20 })
+  return reply(200, OPERATOR)
+}
+
 export const loginOk = (user: object = OPERATOR): MockReply =>
   reply(200, {
     access_token: 'jwt.token.value',

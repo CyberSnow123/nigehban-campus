@@ -1,4 +1,4 @@
-import { Link, useLocation } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 
 import { IconButton } from '../components/Button'
 import { LogoutIcon } from '../components/icons'
@@ -8,11 +8,12 @@ import { useLogoutNavigate } from '../features/auth/useLogoutNavigate'
 import { ROLE_LABEL } from '../lib/constants'
 import { cx } from '../lib/cx'
 import { initials } from './initials'
-import { NAV_ITEMS, navKeyFor } from './navItems'
+import { NAV_ITEMS } from './navItems'
+import { useActiveNavKey } from './useActiveNavKey'
 import type { ShellStatus } from './useShellStatus'
 
 function NavList({ status }: { status: ShellStatus }) {
-  const active = navKeyFor(useLocation().pathname)
+  const active = useActiveNavKey()
   return (
     <nav aria-label="Main" className="flex flex-col gap-1 px-3.5 py-4">
       {NAV_ITEMS.map(({ key, to, label, Icon }) => (

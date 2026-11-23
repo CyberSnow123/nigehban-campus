@@ -28,7 +28,7 @@ export function CameraCell({ camera }: { camera: Alert['camera'] }) {
 }
 
 /** Date over time; the full date and time is the tooltip. */
-function ShortTime({ iso }: { iso: string }) {
+export function ShortTime({ iso }: { iso: string }) {
   const [day, time] = formatShortDateTime(iso)
   return (
     <time dateTime={iso} title={formatDateTime(iso)} className="block leading-snug">

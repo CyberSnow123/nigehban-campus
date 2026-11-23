@@ -2,13 +2,16 @@ import { useEffect, useRef } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 
 import { MobileTabBar } from './MobileTabBar'
+import { NewAlertToast } from './NewAlertToast'
 import { Sidebar } from './Sidebar'
 import { Topbar } from './Topbar'
+import { useNewAlertToast } from './useNewAlertToast'
 import { useShellStatus } from './useShellStatus'
 
 /** Sidebar + topbar + page area for every signed-in screen. */
 export default function AppShell() {
   const status = useShellStatus()
+  const { notice, dismiss } = useNewAlertToast()
   const { pathname } = useLocation()
   const main = useRef<HTMLElement>(null)
   const shownPath = useRef(pathname)
@@ -46,8 +49,10 @@ export default function AppShell() {
         </main>
       </div>
       <MobileTabBar status={status} />
-      {/* New-alert announcements land here in Phase 8. */}
-      <div role="status" aria-live="polite" className="sr-only" />
+      {/* New-alert toast. The region stays mounted, so screen readers announce what appears. */}
+      <div role="status" aria-live="polite" aria-label="Notifications">
+        {notice && <NewAlertToast key={notice.key} notice={notice} onClose={dismiss} />}
+      </div>
     </div>
   )
 }

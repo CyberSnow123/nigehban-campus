@@ -1,5 +1,5 @@
 import { type FormEvent, useState } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 
 import { BellIcon, SearchIcon } from '../components/icons'
 import { ThemeToggle } from '../components/ThemeToggle'
@@ -8,16 +8,26 @@ import { ROLE_LABEL } from '../lib/constants'
 import { initials } from './initials'
 import type { ShellStatus } from './useShellStatus'
 
-/** Search box. Submitting opens the Alerts list filtered by the text (the list is Phase 7). */
+/**
+ * Search box. On History it searches History and keeps its other filters; anywhere else it opens
+ * the Alerts list filtered by the text (phase-08 decision 4).
+ */
 function SearchForm() {
   const navigate = useNavigate()
+  const { pathname } = useLocation()
   const [params] = useSearchParams()
   const [text, setText] = useState(params.get('q') ?? '')
 
   function onSubmit(event: FormEvent) {
     event.preventDefault()
     const q = text.trim()
-    navigate(q ? `/alerts?q=${encodeURIComponent(q)}` : '/alerts')
+    const onHistory = pathname.startsWith('/history')
+    const next = onHistory ? new URLSearchParams(params) : new URLSearchParams()
+    next.delete('page')
+    if (q) next.set('q', q)
+    else next.delete('q')
+    const search = next.toString()
+    navigate(`${onHistory ? '/history' : '/alerts'}${search ? `?${search}` : ''}`)
   }
 
   return (

@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { StrictMode } from 'react'
 import { RouterProvider, createMemoryRouter } from 'react-router-dom'
@@ -8,7 +8,7 @@ import { Providers } from '../app/providers'
 import { routes } from '../app/router'
 
 import { getToken, setToken } from '../lib/api/token'
-import { OPERATOR, mockApi, renderApp, reply, resetAuthState } from '../test/helpers'
+import { emptyApi, mockApi, renderApp, resetAuthState } from '../test/helpers'
 import { initials } from './initials'
 import { navKeyFor } from './navItems'
 import { useShellStatus } from './useShellStatus'
@@ -26,7 +26,7 @@ afterEach(resetAuthState)
 /** Opens `path` as a signed-in operator. */
 async function openSignedIn(path: string) {
   setToken('stored.jwt.token', false)
-  mockApi(() => reply(200, OPERATOR))
+  mockApi(emptyApi)
   const router = renderApp(path)
   await screen.findByRole('main')
   return router
@@ -48,7 +48,8 @@ describe('every signed-in route sits inside the shell', () => {
     expect(screen.getByRole('heading', { level: 1, name: heading })).toBeInTheDocument()
     expect(screen.getAllByRole('navigation', { name: 'Main' })).toHaveLength(2)
     expect(screen.getByRole('search')).toBeInTheDocument()
-    expect(document.title).toMatch(/· Nigehban Campus$/)
+    // Set in a passive effect; the first test in the file can get there after the heading.
+    await waitFor(() => expect(document.title).toMatch(/· Nigehban Campus$/))
   })
 })
 
@@ -90,7 +91,7 @@ describe('navigation', () => {
   // page take focus on load, which scrolled the heading under the sticky topbar.
   it('does not scroll or take focus on first load, even under StrictMode', async () => {
     setToken('stored.jwt.token', false)
-    mockApi(() => reply(200, OPERATOR))
+    mockApi(emptyApi)
     const scrollTo = vi.spyOn(window, 'scrollTo')
     const router = createMemoryRouter(routes, { initialEntries: ['/'] })
     render(

@@ -5,8 +5,8 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { setToken } from '../../lib/api/token'
 import { RUN_ID, makeAction, makeAlert, page } from '../../test/alerts'
 import {
-  OPERATOR,
   apiError,
+  emptyApi,
   mockApi,
   renderApp,
   reply,
@@ -24,7 +24,7 @@ const ALERT_PATH = /^\/api\/alerts\/(alt_\w+)$/
 /** Signed in, with `routes` answering by path; anything else is the logged-in user. */
 function open(path: string, routes: (call: RecordedCall) => MockReply | undefined) {
   setToken('stored.jwt.token', false)
-  const calls = mockApi((call) => routes(call) ?? reply(200, OPERATOR))
+  const calls = mockApi((call) => routes(call) ?? emptyApi(call))
   renderApp(path)
   return calls
 }

@@ -103,11 +103,11 @@ Each section is built in Phase 5. "Filled by" is the phase that puts real data i
 
 ## Gaps raised (for the team; nothing is cut in Phase 5)
 These sections are built but have no data source in the current contracts. Each needs a decision **in the phase that fills it** (contracts first), or an explicit decision to keep the section as an empty state.
-1. **People tracked / Bags tracked** (dashboard tiles, feed chips): `Stats` has no such fields. Could come from run frame telemetry (Phase 10/12).
+1. **People tracked / Bags tracked** (dashboard tiles, feed chips): `Stats` has no such fields. Could come from run frame telemetry (Phase 10/12). **Decided in Phase 8: deferred to Phase 11/12** (with gap 2); the tiles and chips keep their dash.
 2. **Live tracking state** (dashboard "Current target", Live inspector, feed footer state): there is no contract for per-frame track and association state. Phase 11/12 would need a `RunState` read model.
 3. **Appearance crops** (theft comparison cards, person profile image): no crop is stored. Phase 17 (OwnerMatcher) creates owner crops. Until then, a placeholder frame "Appearance images arrive with the owner fingerprint (FYP-2)".
 4. **Reopen alert**: the prototype offers it, but the transition table makes closed statuses terminal. Either add `closed → active` (a contract change) or leave it out. Phase 5 leaves it out. **Decided in Phase 7: left out**; closed statuses stay terminal.
-5. **Average response** (History): it can be derived from `acknowledged_at - created_at`, but `Stats` has no field for it. Phase 8 decides.
+5. **Average response** (History): it can be derived from `acknowledged_at - created_at`, but `Stats` has no field for it. Phase 8 decides. **Decided in Phase 8:** `HistoryStats.avg_response_s` from `GET /api/stats/history` (raised → first acknowledge, or close from active).
 6. **Theft toggles** ("Alert when a non-owner carries a bag", "Allow authorised pickup by staff"): there are no `config.json` keys for them. Phase 12 decides (e.g. `theft.enabled`).
 7. **Email alerts**: no alert-email feature in scope (Phase 4 mail is for password resets only). Phase 12 decides.
 

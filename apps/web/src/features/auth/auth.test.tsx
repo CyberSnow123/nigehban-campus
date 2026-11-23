@@ -8,6 +8,7 @@ import { api } from '../../lib/api/client'
 import { getToken, setToken } from '../../lib/api/token'
 import {
   OPERATOR,
+  emptyApi,
   apiError,
   loginOk,
   mockApi,
@@ -37,10 +38,11 @@ describe('RequireAuth', () => {
 
   it('shows the protected page once the stored token is accepted', async () => {
     setToken('stored.jwt.token', true)
-    const calls = mockApi(() => reply(200, OPERATOR))
+    const calls = mockApi(emptyApi)
     renderApp('/')
     expect(await screen.findByRole('heading', { name: 'Dashboard' })).toBeTruthy()
-    expect(calls).toHaveLength(1)
+    // The token is checked once, before anything else; the page's own data loads after it.
+    expect(calls.filter((call) => call.path === '/api/auth/me')).toHaveLength(1)
     expect(calls[0]).toMatchObject({
       path: '/api/auth/me',
       authorization: 'Bearer stored.jwt.token',
@@ -60,9 +62,7 @@ describe('RequireAuth', () => {
 
 describe('login', () => {
   it('logs in, stores the token for later and opens the app', async () => {
-    const calls = mockApi((call) =>
-      call.path === '/api/auth/login' ? loginOk() : reply(200, OPERATOR),
-    )
+    const calls = mockApi((call) => (call.path === '/api/auth/login' ? loginOk() : emptyApi(call)))
     renderApp('/login')
     const user = await logIn()
     await user.click(screen.getByRole('button', { name: 'Log in to monitoring' }))
@@ -179,7 +179,7 @@ async function userEventLogin() {
 
 describe('logout and expiry', () => {
   async function openApp() {
-    mockApi((call) => (call.path === '/api/auth/login' ? loginOk() : reply(200, OPERATOR)))
+    mockApi((call) => (call.path === '/api/auth/login' ? loginOk() : emptyApi(call)))
     const router = renderApp('/login')
     await userEventLogin()
     await screen.findByRole('heading', { name: 'Dashboard' })
@@ -212,7 +212,7 @@ describe('logout and expiry', () => {
   })
 
   it('a 401 on any later request ends the session and redirects to /login', async () => {
-    mockApi((call) => (call.path === '/api/auth/login' ? loginOk() : reply(200, OPERATOR)))
+    mockApi((call) => (call.path === '/api/auth/login' ? loginOk() : emptyApi(call)))
     const router = renderApp('/login')
     await userEventLogin()
     await screen.findByRole('heading', { name: 'Dashboard' })

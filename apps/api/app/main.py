@@ -7,7 +7,7 @@ from app import __version__
 from app.core.errors import register_error_handlers
 from app.core.rate_limit import limiter
 from app.core.settings import get_settings
-from app.routers import alerts, auth, health, ingest
+from app.routers import alerts, auth, health, ingest, stats
 
 
 def create_app() -> FastAPI:
@@ -25,6 +25,7 @@ def create_app() -> FastAPI:
     app.include_router(auth.router)
     app.include_router(ingest.router)
     app.include_router(alerts.router)
+    app.include_router(stats.router)
     return app
 
 
