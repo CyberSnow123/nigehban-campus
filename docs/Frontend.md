@@ -15,7 +15,7 @@ apps/web/src/
     auth/         LoginPage, LoggedOutPage, ForgotPasswordPage, ResetPasswordPage, AuthProvider + useAuth, RequireAuth, RequireAdmin
     dashboard/    DashboardPage, CameraPreviewCard, TodayAlerts
     live/         LivePage, FeedTile (latest frame img, 1×1 / 2×2), RunControls
-    alerts/       AlertsPage, AlertDetailPage, AlertCard, AlertActions, ActionTimeline
+    alerts/       AlertsPage, AlertDetailPage, AlertActions, CloseAlertDialog, AlertTimeline, api.ts (queries, mutations), narrative.ts, format.ts, alertRows.tsx
     history/      HistoryPage (filters, range, pagination)
     person/       PersonPage (alerts where track id is owner or carrier)
     settings/     SettingsPage (detection rules, theft check, cameras)
@@ -33,7 +33,7 @@ apps/web/src/
 | `/` | `v-dashboard` | stat tiles, camera preview, today's alerts |
 | `/live` | `v-live` | latest frame per running run, 1×1/2×2 toggle, start/stop run |
 | `/alerts` | `v-alerts` | open alerts, status filter, search |
-| `/alerts/:id` | `v-alert` | snapshot, facts, acknowledge, close with outcome, timeline |
+| `/alerts/:id` | `v-alert` | snapshot, facts, acknowledge, close with outcome (confirm dialog with an optional note), timeline below the details card. Buttons follow `alert.next_statuses` using the prototype's set (Resolve for abandoned; Confirm theft and Authorised pickup for possible theft; Mark false alarm). No Reopen |
 | `/history` | `v-history` | closed and all alerts, type/status/range filters, pagination |
 | `/runs/:runId/person/:trackId` | `v-person` | track IDs are per run |
 | `/settings` | `v-app-settings` | editing is admin only, others read-only |
@@ -44,7 +44,9 @@ All routes except login and logged-out sit inside `RequireAuth` and `AppShell`. 
 - **Token storage:** always in memory; the login checkbox "Remember this terminal session" also keeps it in `localStorage` (checked) or `sessionStorage` (unchecked). A stored token is verified with `GET /api/auth/me` before the app trusts it. Types come from `bun run gen:api` (`schema.d.ts` and `openapi.json` are committed, never hand-edited).
 - Query keys: `['alerts', filters]`, `['alert', id]`, `['stats']`, `['runs']`, `['run', id]`.
 - `refetchInterval: 3000` on stats, open alerts, alert detail and running runs (D-09). Pause when the tab is hidden. Stop polling a run once it's `completed|stopped|failed`.
-- Live frame: `<img src="/api/runs/{id}/frame?t={tick}">` refreshed every 1 s, sent with the auth token (fetched as a blob).
+- **Alert queries** (`features/alerts/api.ts`): keys `['alerts', params]`, `['alert', id]`, `['alert', id, 'actions']`, `['alert', id, 'snapshot']`. An action replaces `['alert', id]` and invalidates it and every `['alerts']` list. A 4xx is not retried; a server or network error is retried once. List filters and the page number live in the URL (`/alerts?type=&status=&q=&page=`). Read types are taken from the client's fetchers, not `components['schemas']`, because openapi-fetch turns the 4-number `bbox` tuple into `number[]`.
+- **Images that need the token** (`lib/useAuthedImage.ts`): an `<img>` cannot send `Authorization`, so the snapshot is fetched through the client as a blob and shown as a data URL (cached, `staleTime: Infinity`). The live frame (Phase 12) uses the same hook with a refreshing key.
+- Live frame: `/api/runs/{id}/frame` refreshed every 1 s through `useAuthedImage`.
 - Mutations (`acknowledge`, `close`, `start/stop run`, `settings`) invalidate the related keys. No optimistic updates for alert status.
 - **New-alert cue:** when `stats.active` increases, show a toast and the sidebar badge, plus an optional sound (a local preference kept in `localStorage`).
 

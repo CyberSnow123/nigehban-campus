@@ -65,6 +65,7 @@
     "confidence": 0.94,
     "owner_match": 0.18,
     "snapshot_url": "/api/alerts/alt_01JD2Y5K3M9QZ8V7T6R4N2B1CD/snapshot",
+    "next_statuses": ["acknowledged", "resolved", "false_alarm", "authorised_pickup", "confirmed_theft"],
     "acknowledged_by": null,
     "acknowledged_at": null,
     "closed_at": null,

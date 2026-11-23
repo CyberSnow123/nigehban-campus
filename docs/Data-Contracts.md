@@ -102,11 +102,15 @@ A status post, frame or event for a run that cannot take it is `409 RUN_NOT_RUNN
   "separation_s": null, "owner_distance_m": 3.1, "owner_away_s": 35.0,
   "confidence": 0.94, "owner_match": 0.18,
   "snapshot_url": "/api/alerts/alt_…/snapshot",
+  "next_statuses": ["acknowledged", "resolved", "false_alarm", "authorised_pickup", "confirmed_theft"],
   "acknowledged_by": null, "acknowledged_at": null, "closed_at": null,
   "created_at": "…"
 }
 ```
 `acknowledged_by` is `{id, display_name}` or `null`.
+`next_statuses` lists the statuses this alert can move to now, worked out by the API from the transition table (§2) for its type and status, in a fixed order: `acknowledged`, `resolved`, `false_alarm`, `authorised_pickup`, `confirmed_theft`. It is empty for a closed alert. The web app offers exactly these actions and keeps no copy of the rules.
+
+**Alert actions** (user token needed): `POST /api/alerts/{id}/acknowledge` (no body) and `POST /api/alerts/{id}/close` (`CloseRequest`, §6) both return the updated `Alert`. A move the table does not allow is `409 INVALID_TRANSITION`; a body that fails validation is `422`; an unknown ID is `404`. Every action writes one `AlertAction` in the same transaction. Closed alerts cannot be reopened (decided in Phase 7).
 
 **AlertAction**: `{ "id": "act_…", "alert_id": "alt_…", "action": "acknowledge|close", "from_status": "active", "to_status": "acknowledged", "user": {"id","display_name"}, "note": null, "at": "…" }`
 

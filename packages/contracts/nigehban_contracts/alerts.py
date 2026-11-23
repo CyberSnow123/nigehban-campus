@@ -35,6 +35,7 @@ class Alert(ContractModel):
     confidence: Unit
     owner_match: Unit | None = None
     snapshot_url: str
+    next_statuses: list[AlertStatus]
     acknowledged_by: UserRef | None = None
     acknowledged_at: UtcDatetime | None = None
     closed_at: UtcDatetime | None = None

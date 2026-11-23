@@ -4,8 +4,11 @@ import { Button } from '../../components/Button'
 import { Card } from '../../components/Card'
 import { SelectField } from '../../components/controls'
 import { RefreshIcon } from '../../components/icons'
+import { Pager } from '../../components/Pager'
 import { Pill } from '../../components/Pill'
 import { Table, type Column } from '../../components/Table'
+import { alertRow } from './alertRows'
+import { useAlerts } from './api'
 import { TypeFilter } from './TypeFilter'
 import { useAlertFilters, type StatusFilterValue } from './useAlertFilters'
 
@@ -28,11 +31,22 @@ const STATUS_OPTIONS: ReadonlyArray<{ value: StatusFilterValue; label: string }>
   { value: 'closed', label: 'Resolved / closed' },
 ]
 
-/** Filter bar plus the alerts table. Rows arrive in Phase 7. */
+const PAGE_SIZE = 50
+
+/** Filter bar plus the alerts table, newest first. */
 export function AlertsTable() {
-  const { type, status, q, update } = useAlertFilters()
+  const { type, status, q, page, update } = useAlertFilters()
   const queryClient = useQueryClient()
   const filtered = type !== 'all' || status !== 'all' || q !== ''
+  const alerts = useAlerts({
+    type: type === 'all' ? undefined : type,
+    status: status === 'all' ? undefined : status,
+    q: q || undefined,
+    page,
+    page_size: PAGE_SIZE,
+  })
+  const data = alerts.data
+  const pageCount = data ? Math.ceil(data.total / PAGE_SIZE) : 0
 
   return (
     <Card>
@@ -75,9 +89,20 @@ export function AlertsTable() {
       <Table
         caption="Security alerts"
         columns={COLUMNS}
-        rows={[]}
+        rows={data?.items.map(alertRow) ?? []}
+        loading={alerts.isPending}
+        error={alerts.isError ? alerts.error.message : undefined}
         emptyText={filtered ? 'No alerts match these filters.' : 'No alerts yet.'}
       />
+      {data && pageCount > 1 && (
+        <Pager
+          page={page}
+          pageCount={pageCount}
+          shown={data.items.length}
+          total={data.total}
+          onPage={(next) => update('page', String(next))}
+        />
+      )}
     </Card>
   )
 }

@@ -1,7 +1,7 @@
 import { Card, CardBody } from '../../components/Card'
 import { DocIcon } from '../../components/icons'
 
-/** One-sentence summary written from the alert's own measurements (Phase 7). */
+/** A short summary written from the alert's own measurements (`narrative.ts`). */
 export function NarrativeCard({ text }: { text?: string }) {
   return (
     <Card>

@@ -345,3 +345,33 @@ def post_event(client: TestClient, worker_headers):
         )
 
     return _post
+
+
+# ---- alerts (Phase 7) ------------------------------------------------------------------
+
+
+@pytest.fixture
+def make_ingested_alert(db: Session, make_run, post_event, operator: User):
+    """``make_ingested_alert(event_type, status, run=None, **event_fields)`` -> Alert row.
+
+    The alert is created through the real ingest route, then moved to ``status`` directly in
+    the DB (with the fields that status needs), so action tests can start from any status."""
+
+    def _make(
+        event_type: str = "abandoned_bag", status: str = "active", run: Run | None = None, **fields
+    ) -> Alert:
+        run = run or make_run()
+        res = post_event(event_payload(run, event_type, **fields))
+        assert res.status_code == 201, res.text
+        alert = db.get(Alert, res.json()["alert_id"])
+        if status != "active":
+            now = datetime.now(UTC)
+            alert.status = status
+            if status == "acknowledged":
+                alert.acknowledged_by, alert.acknowledged_at = operator.id, now
+            else:
+                alert.closed_at = now
+            db.commit()
+        return alert
+
+    return _make
