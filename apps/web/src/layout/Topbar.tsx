@@ -37,6 +37,7 @@ function SearchForm() {
         value={text}
         onChange={(event) => setText(event.target.value)}
         placeholder="Search e.g. Person #12, Bag #31, CAM 03"
+        title="Try: Person #12, person 2, P7, Bag #31, library, theft"
         aria-label="Search"
         className="min-h-11 w-full rounded-lg border border-line bg-wash pr-3.5 pl-10"
       />

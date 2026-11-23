@@ -15,7 +15,7 @@ apps/api/
     models/            SQLAlchemy tables (one file per table)
     schemas/           API-only request models; shared shapes import nigehban_contracts
     routers/           auth, alerts, stats, runs, cameras, ingest, settings
-    services/          alert_service (new alert from an event; acknowledge, close), alert_query (list filters, detail, audit trail, snapshot file), stats_service (Dashboard and History counters; the clock is passed in), ingest_service (event checks, idempotency), run_service (worker runs and status), ref_codes, run_launcher (subprocess, Phase 12), storage (snapshots/frames under DATA_DIR)
+    services/          alert_service (new alert from an event; acknowledge, close), alert_query (list filters, detail, audit trail, snapshot file), alert_search (reads the `q` text: person, bag, number, type word), stats_service (Dashboard and History counters; the clock is passed in), ingest_service (event checks, idempotency), run_service (worker runs and status), ref_codes, run_launcher (subprocess, Phase 12), storage (snapshots/frames under DATA_DIR)
     db/locks.py        PostgreSQL advisory locks (event_id, ref_code year)
   alembic/             migrations
   scripts/seed.py      users, cameras, demo alerts (is_demo=true)
@@ -32,7 +32,7 @@ Rule: routers stay thin, and the business rules (transitions, idempotency) live 
 | POST | `/api/auth/reset-password` | none | `{token, new_password}` → `200 {message}`; bad or used link → `422` |
 | GET | `/api/stats` | user | `Stats` (Data-Contracts §5): open counts, today's counts in `CAMPUS_TIMEZONE` (alerts by `occurred_at`, `closed_today` by `closed_at`), `running_runs`, and `latest_alert` (last stored, `created_at desc, id desc`) |
 | GET | `/api/stats/history` | user | `days` (1, 7 or 30; default 7), optional `type` → `HistoryStats {total, false_alarms, avg_response_s}` for closed alerts with `occurred_at` in the last `days` days. Response = `created_at` → `acknowledged_at`, or `closed_at` when closed from `active`; `null` when none. Bad values `422` |
-| GET | `/api/alerts` | user | filters: `status` (or `open`/`closed`), `type`, `camera_id`, `run_id`, `person` (track id, matches owner or carrier), `q` (ref code, camera name or location, case-insensitive; a whole number or `#n` also matches bag, owner and carrier track IDs), `from`, `to` (timezone required), `is_demo`, `page` (from 1), `page_size` (default 20, max 100). Newest first (`occurred_at desc, id desc`) → `Page[Alert]`. Unknown keys are ignored; bad values `422` |
+| GET | `/api/alerts` | user | filters: `status` (or `open`/`closed`), `type`, `camera_id`, `run_id`, `person` (track id, matches owner or carrier), `q` (`services/alert_search.py`, case-insensitive: `person 12` / `Person #12` / `P12` / `P-12` = owner or carrier track 12 only; `bag 31` / `Bag #31` = bag track 31, and `Handbag #31` / `backpack 31` also the class; otherwise part of the ref code, camera name or location, where a whole number or `#n` also matches bag, owner and carrier track IDs and `theft` / `abandoned` also match that type), `from`, `to` (timezone required), `is_demo`, `page` (from 1), `page_size` (default 20, max 100). Newest first (`occurred_at desc, id desc`) → `Page[Alert]`. Unknown keys are ignored; bad values `422` |
 | GET | `/api/alerts/{id}` | user | `Alert` (with `next_statuses`); unknown ID `404` |
 | GET | `/api/alerts/{id}/snapshot` | user | JPEG, `Cache-Control: private, max-age=3600`; missing file `404` |
 | GET | `/api/alerts/{id}/actions` | user | `list[AlertAction]`, oldest first |

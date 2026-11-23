@@ -21,6 +21,7 @@ from sqlalchemy.orm import Session, aliased
 from app.core.errors import not_found
 from app.models import Alert, AlertAction, Camera, User
 from app.schemas.alerts import AlertListQuery
+from app.services.alert_search import search_condition
 from app.services.storage import Storage
 
 _Acknowledger = aliased(User)
@@ -81,35 +82,12 @@ def get_alert(db: Session, alert_id: str) -> AlertModel:
 # ---- list ------------------------------------------------------------------------------
 
 
-def _escape_like(text: str) -> str:
-    return text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
-
-
 def _status_condition(status: str) -> ColumnElement[bool]:
     if status == "open":
         return Alert.status.in_([s.value for s in OPEN_STATUSES])
     if status == "closed":
         return Alert.status.in_([s.value for s in CLOSED_STATUSES])
     return Alert.status == AlertStatus(status).value
-
-
-def _search_condition(q: str) -> ColumnElement[bool]:
-    """Ref code, camera name or location; a whole number also matches the track IDs."""
-    pattern = f"%{_escape_like(q)}%"
-    options = [
-        Alert.ref_code.ilike(pattern, escape="\\"),
-        Camera.name.ilike(pattern, escape="\\"),
-        Camera.location.ilike(pattern, escape="\\"),
-    ]
-    number = q.lstrip("#")
-    if number.isdigit() and len(number) < 10:
-        track = int(number)
-        options += [
-            Alert.bag_track_id == track,
-            Alert.owner_track_id == track,
-            Alert.carrier_track_id == track,
-        ]
-    return or_(*options)
 
 
 def _conditions(query: AlertListQuery) -> list[ColumnElement[bool]]:
@@ -127,7 +105,7 @@ def _conditions(query: AlertListQuery) -> list[ColumnElement[bool]]:
             or_(Alert.owner_track_id == query.person, Alert.carrier_track_id == query.person)
         )
     if query.q is not None:
-        conditions.append(_search_condition(query.q))
+        conditions.append(search_condition(query.q))
     if query.from_ is not None:
         conditions.append(Alert.occurred_at >= query.from_)
     if query.to is not None:

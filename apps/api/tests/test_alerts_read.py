@@ -94,6 +94,30 @@ def test_search(client, auth, db, live_camera: Camera, make_ingested_alert):
     assert _list(client, auth, q="   ").total == 2  # blank = no filter
 
 
+def test_search_by_person_bag_and_type_words(client, auth, make_ingested_alert):
+    # Abandoned: Handbag #18, owner Person #31. Possible theft: Backpack #5, owner 2, carrier 12.
+    first = make_ingested_alert(owner_track_id=31)
+    second = make_ingested_alert(
+        "possible_theft", bag={"track_id": 5, "class": "backpack", "bbox": [1, 2, 3, 4]}
+    )
+
+    def found(q: str) -> list[str]:
+        return _ids(_list(client, auth, q=q))
+
+    assert found("person 31") == [first.id]
+    assert found("Person #12") == [second.id]  # carrier
+    assert found("P2") == [second.id]  # owner
+    assert found("p-31") == [first.id]
+    assert found("person 18") == []  # 18 is a bag, not a person
+    assert found("Bag #18") == [first.id]
+    assert found("bag 5") == [second.id]
+    assert found("Handbag #18") == [first.id]
+    assert found("backpack 18") == []  # bag 18 is a handbag
+    assert found("bag 31") == []  # 31 is a person, not a bag
+    assert found("theft") == [second.id]
+    assert found("abandoned") == [first.id]
+
+
 def test_time_range(client, auth, db, make_ingested_alert):
     alert = make_ingested_alert()
     when = datetime(2026, 11, 10, 12, tzinfo=UTC)

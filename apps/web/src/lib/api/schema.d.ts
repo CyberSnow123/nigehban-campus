@@ -1214,6 +1214,7 @@ export interface operations {
                 run_id?: string | null;
                 /** @description Track ID, owner or carrier */
                 person?: number | null;
+                /** @description `person 12` / `P12` (owner or carrier), `bag 31` / `Handbag #31`, a number `12` (any track), `theft` / `abandoned`, or part of the ref code, camera name or location */
                 q?: string | null;
                 from?: string | null;
                 to?: string | null;
